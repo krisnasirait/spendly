@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/firestore';
+import { getDb } from '@/lib/firestore';
 import type { Insight } from '@/types';
 
 const INSIGHT_TEMPLATES = {
@@ -55,6 +55,7 @@ export async function GET() {
 
   const userId = (session.user as { id: string }).id;
   
+  const db = getDb();
   const snapshot = await db
     .collection('users')
     .doc(userId)

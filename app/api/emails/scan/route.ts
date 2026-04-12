@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/firestore';
+import { getDb } from '@/lib/firestore';
 import { createGmailClient, fetchTransactionEmails } from '@/lib/gmail';
 import { parseEmail } from '@/lib/parsers';
 import type { Transaction } from '@/types';
@@ -34,6 +34,7 @@ export async function POST() {
     }
   }
 
+  const db = getDb();
   const batch = db.batch();
   const txRef = db.collection('users').doc(userId).collection('transactions');
   
