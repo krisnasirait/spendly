@@ -9,6 +9,7 @@ const emojiMap: Record<string, string> = {
   shopee: '🛒',
   tokopedia: '🏪',
   traveloka: '✈️',
+  bca: '🏦',
 };
 
 function formatDate(date: Date): string {

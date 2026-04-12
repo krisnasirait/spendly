@@ -1,6 +1,7 @@
 import { parseShopeeEmail } from './shopee';
 import { parseTokopediaEmail } from './tokopedia';
 import { parseTravelokaEmail } from './traveloka';
+import { parseBCAEmail } from './bca';
 import { Transaction } from '@/types';
 
 export interface ParsedEmail {
@@ -22,6 +23,9 @@ export function parseEmail(email: { subject: string; body: string; from: string 
   }
   if (from.includes('traveloka')) {
     return parseTravelokaEmail(email) as ParsedEmail | null;
+  }
+  if (from.includes('bca')) {
+    return parseBCAEmail(email) as ParsedEmail | null;
   }
   
   return null;

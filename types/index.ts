@@ -5,7 +5,7 @@ export interface Transaction {
   merchant: string;
   date: Date;
   category: Category;
-  source: 'shopee' | 'tokopedia' | 'traveloka';
+  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca';
   createdAt: Date;
 }
 
