@@ -1,15 +1,16 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function SignIn() {
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    signIn('google', { callbackUrl: '/dashboard' });
-  }, [router]);
+    signIn('google', { callbackUrl: '/dashboard' }).then(() => {
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <main className="min-h-screen bg-white flex items-center justify-center">
