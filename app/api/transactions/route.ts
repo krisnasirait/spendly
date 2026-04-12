@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getDb } from '@/lib/firestore';
 import type { Transaction } from '@/types';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

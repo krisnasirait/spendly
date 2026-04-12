@@ -2,29 +2,9 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDb } from '@/lib/firestore';
-import type { Insight } from '@/types';
+import type { Insight, Transaction } from '@/types';
 
-const INSIGHT_TEMPLATES = {
-  spike: [
-    'Lo udah habis {amount} buat jajan minggu ini 😭',
-    'Dompet lo lagi nggak sehat',
-  ],
-  trend: [
-    'Belanja lo naik {percent}% dibanding minggu lalu',
-    'Hari ini lo hemat! ✨',
-  ],
-  category_overload: [
-    '{percent}% of spending this month is {category} 🍔',
-  ],
-  pattern: [
-    'Lo udah order Grab 15x bulan ini',
-  ],
-  encouragement: [
-    'Hari ini lo hemat! ✨',
-  ],
-};
-
-function generateInsights(transactions: any[]): Partial<Insight>[] {
+function generateInsights(transactions: Transaction[]): Partial<Insight>[] {
   const insights: Partial<Insight>[] = [];
   
   const now = new Date();
@@ -63,11 +43,14 @@ export async function GET() {
     .orderBy('date', 'desc')
     .get();
 
-  const transactions = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    userId,
-    ...(doc.data() as any),
-  }));
+  const transactions: Transaction[] = snapshot.docs.map((doc) => {
+    const data = doc.data() as Omit<Transaction, 'id' | 'userId'>;
+    return {
+      id: doc.id,
+      userId,
+      ...data,
+    };
+  });
 
   const insights = generateInsights(transactions);
 
