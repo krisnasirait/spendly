@@ -62,6 +62,7 @@ export async function POST() {
             source,
             userId,
             createdAt: new Date(),
+            emailId: email.id,
           });
         }
       } catch (e) {
@@ -105,6 +106,7 @@ export async function POST() {
         date: t.date,
         category: t.category,
         source: t.source,
+        emailId: t.emailId,
       })),
     });
   } catch (error) {

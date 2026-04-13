@@ -43,6 +43,7 @@ interface ScanResults {
     date: string;
     category: string;
     source: string;
+    emailId: string;
   }>;
 }
 
@@ -75,6 +76,7 @@ function SourceBadge({ source }: { source: string }) {
 function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onViewAll: () => void }) {
   const [emailsExpanded, setEmailsExpanded] = useState(true);
   const [txExpanded, setTxExpanded] = useState(true);
+  const emailMap = Object.fromEntries(results.emails.map(e => [e.id, e]));
 
   return (
     <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -197,12 +199,14 @@ function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onView
                     <th>Merchant</th>
                     <th>Source</th>
                     <th>Category</th>
+                    <th>From Email</th>
                     <th style={{ textAlign: 'right' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.transactions.map((tx, i) => {
                     const badge = sourceColors[tx.source] ?? { color: '#6B7280', bg: '#F3F4F6' };
+                    const sourceEmail = emailMap[tx.emailId];
                     return (
                       <tr key={i}>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -215,8 +219,13 @@ function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onView
                             fontSize: 10, fontWeight: 600, background: badge.bg, color: badge.color,
                           }}>{tx.source}</span>
                         </td>
-                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                        <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                           {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
+                        </td>
+                        <td style={{ fontSize: 10, color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          title={sourceEmail?.subject || ''}
+                        >
+                          {sourceEmail?.subject || tx.emailId}
                         </td>
                         <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
                           -{fmtCurrency(tx.amount)}
@@ -241,6 +250,8 @@ function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onView
 }
 
 function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose: () => void }) {
+  const emailMap = Object.fromEntries(results.emails.map(e => [e.id, e]));
+
   return (
     <div
       style={{
@@ -335,12 +346,14 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
                     <th>Merchant</th>
                     <th>Source</th>
                     <th>Category</th>
+                    <th>From Email</th>
                     <th style={{ textAlign: 'right' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.transactions.map((tx, i) => {
                     const badge = sourceColors[tx.source] ?? { color: '#6B7280', bg: '#F3F4F6' };
+                    const sourceEmail = emailMap[tx.emailId];
                     return (
                       <tr key={i}>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -355,6 +368,11 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                           {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
+                        </td>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          title={sourceEmail?.subject || ''}
+                        >
+                          {sourceEmail?.subject || tx.emailId}
                         </td>
                         <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
                           -{fmtCurrency(tx.amount)}
