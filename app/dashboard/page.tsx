@@ -160,6 +160,8 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
+  type Period = 'today' | 'week' | 'month' | 'all';
+  const [period, setPeriod] = useState<Period>('month');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -239,9 +241,26 @@ export default function DashboardPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <button className="btn btn-ghost" style={{ fontSize: 13 }}>
-            <CalendarIco /> This month
-          </button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {(['today', 'week', 'month', 'all'] as Period[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 8,
+                  border: 'none',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  background: period === p ? 'var(--accent)' : 'var(--bg-surface)',
+                  color: period === p ? '#fff' : 'var(--text-secondary)',
+                }}
+              >
+                {p === 'today' ? 'Today' : p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : 'All Time'}
+              </button>
+            ))}
+          </div>
           <button
             id="scan-emails-btn"
             className="btn btn-primary"
