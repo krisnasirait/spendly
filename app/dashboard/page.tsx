@@ -190,30 +190,56 @@ export default function DashboardPage() {
   }
 
   /* ── derived stats ── */
-  const totalSpend = useMemo(() => transactions.reduce((s, t) => s + t.amount, 0), [transactions]);
+  const totalSpend = useMemo(() => filtered.reduce((s, t) => s + t.amount, 0), [filtered]);
 
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {};
-    transactions.forEach((t) => {
+    filtered.forEach((t) => {
       const cats = t.categories || [t.category];
       cats.forEach(cat => { map[cat] = (map[cat] ?? 0) + t.amount; });
     });
     return Object.entries(map).map(([cat, total]) => ({ cat, total }));
-  }, [transactions]);
+  }, [filtered]);
 
   const byMonth = useMemo(() => {
     const map: Record<string, number> = {};
-    transactions.forEach((t) => {
+    filtered.forEach((t) => {
       const d = new Date(t.date);
       const key = d.toLocaleString('default', { month: 'short' });
       map[key] = (map[key] ?? 0) + t.amount;
     });
     return Object.entries(map).map(([month, spend]) => ({ month, spend, income: Math.round(spend * 1.45) }));
-  }, [transactions]);
+  }, [filtered]);
 
-  const recent = useMemo(() => [...transactions]
+  const filtered = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return transactions.filter(t => {
+      const txDate = new Date(t.date);
+      switch (period) {
+        case 'today':
+          return txDate >= today;
+        case 'week': {
+          const dayOfWeek = now.getDay();
+          const monday = new Date(today);
+          monday.setDate(monday.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+          return txDate >= monday;
+        }
+        case 'month': {
+          const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          return txDate >= firstOfMonth;
+        }
+        case 'all':
+        default:
+          return true;
+      }
+    });
+  }, [transactions, period]);
+
+  const recent = useMemo(() => [...filtered]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 8), [transactions]);
+    .slice(0, 8), [filtered]);
 
   if (status === 'loading') {
     return (
