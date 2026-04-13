@@ -9,6 +9,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
+import AddTransactionPanel from '@/components/AddTransactionPanel';
 import { getCategoryColor } from '@/lib/category-colors';
 import { getBillingPeriod, isInBillingPeriod, getPreviousBillingPeriod } from '@/lib/billing-period';
 
@@ -161,6 +162,7 @@ export default function DashboardPage() {
   type Period = 'today' | 'week' | 'month' | 'all';
   const [period, setPeriod] = useState<Period>('month');
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [showAddPanel, setShowAddPanel] = useState(false);
   const [billingStartDay, setBillingStartDay] = useState(1);
 
   const loadData = useCallback(async () => {
@@ -202,6 +204,14 @@ export default function DashboardPage() {
 
   function handleSave(updated: Transaction) {
     setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
+  }
+
+  function handleAdd(newTx: Omit<Transaction, 'userId' | 'createdAt'>) {
+    setTransactions(prev => [{
+      ...newTx,
+      userId: (session?.user as { id?: string })?.id || '',
+      createdAt: new Date().toISOString(),
+    }, ...prev]);
   }
 
   /* ── derived stats ── */
@@ -645,6 +655,38 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* FAB */}
+      <button
+        onClick={() => setShowAddPanel(true)}
+        style={{
+          position: 'fixed',
+          bottom: 32,
+          right: 32,
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          background: 'var(--accent)',
+          color: '#fff',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: 28,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 30,
+        }}
+      >
+        +
+      </button>
+
+      {showAddPanel && (
+        <AddTransactionPanel
+          onClose={() => setShowAddPanel(false)}
+          onAdd={handleAdd}
+        />
+      )}
 
       {editingTx && (
         <EditTransactionPanel

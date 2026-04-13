@@ -2,17 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { getCategoryColor } from '@/lib/category-colors';
+import type { Transaction } from '@/types';
 
 interface AddTransactionPanelProps {
   onClose: () => void;
-  onAdd: (transaction: {
-    id: string;
-    merchant: string;
-    amount: number;
-    date: string;
-    categories: string[];
-    source: string;
-  }) => void;
+  onAdd: (transaction: Omit<Transaction, 'userId' | 'createdAt'> & { source?: string }) => void;
 }
 
 interface Category {
@@ -123,7 +117,7 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
           amount: Number(amount),
           date,
           categories,
-          source: 'manual',
+          source: 'manual' as Transaction['source'],
         });
         onClose();
       } else {
