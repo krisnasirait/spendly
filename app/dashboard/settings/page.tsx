@@ -23,6 +23,7 @@ const PERIODS = [
 interface Settings {
   sources: string[];
   scanPeriodDays: number;
+  billingStartDay: number;
 }
 
 interface ScanResults {
@@ -394,7 +395,7 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30 });
+  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -546,6 +547,26 @@ export default function SettingsPage() {
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
+        <div style={{ marginTop: 16 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+            Billing Start Day
+          </label>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+            Day of month when your salary cycle starts (1-28)
+          </p>
+          <input
+            type="number"
+            min={1}
+            max={28}
+            value={settings.billingStartDay}
+            onChange={(e) => saveSettings({ ...settings, billingStartDay: Number(e.target.value) })}
+            style={{
+              width: '100%', padding: '10px 14px', borderRadius: 10,
+              border: '1.5px solid var(--border)', background: 'var(--bg-page)',
+              fontSize: 14, color: 'var(--text-primary)', outline: 'none',
+            }}
+          />
+        </div>
       </SettingsSection>
 
       <SettingsSection
