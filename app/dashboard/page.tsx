@@ -217,7 +217,7 @@ export default function DashboardPage() {
     
     return transactions.filter(t => {
       const txDate = new Date(t.date);
-      const txDateUtc = new Date(Date.UTC(txDate.getFullYear(), txDate.getMonth(), txDate.getDate()));
+      const txDateUtc = new Date(Date.UTC(txDate.getUTCFullYear(), txDate.getUTCMonth(), txDate.getUTCDate()));
       const todayUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
       
       switch (period) {
@@ -281,7 +281,7 @@ export default function DashboardPage() {
     
     const periodTxs = transactions.filter(t => {
       const txDate = new Date(t.date);
-      const txDateUtc = new Date(Date.UTC(txDate.getFullYear(), txDate.getMonth(), txDate.getDate()));
+      const txDateUtc = new Date(Date.UTC(txDate.getUTCFullYear(), txDate.getUTCMonth(), txDate.getUTCDate()));
       return txDateUtc >= start && txDateUtc < end;
     });
     
