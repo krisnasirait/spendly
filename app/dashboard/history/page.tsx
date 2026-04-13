@@ -6,6 +6,7 @@ import { useEffect, useState, useMemo } from 'react';
 import type { Transaction } from '@/types';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
 import { getCategoryColor } from '@/lib/category-colors';
+import { getBillingPeriod, isInBillingPeriod } from '@/lib/billing-period';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -26,6 +27,7 @@ const sourceBadge: Record<string, { label: string; color: string; bg: string }> 
 const ITEMS_PER_PAGE = 15;
 
 type SortKey = 'date' | 'amount' | 'merchant';
+type Period = 'today' | 'week' | 'month' | 'all';
 
 export default function HistoryPage() {
   const { data: session, status } = useSession();
@@ -35,6 +37,8 @@ export default function HistoryPage() {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('');
   const [filterSource, setFilterSource] = useState('');
+  const [period, setPeriod] = useState<Period>('month');
+  const [billingStartDay, setBillingStartDay] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
@@ -54,11 +58,46 @@ export default function HistoryPage() {
           setTransactions(data.transactions || []);
           setLoading(false);
         });
+      fetch('/api/settings')
+        .then(r => r.json())
+        .then(data => {
+          if (data.billingStartDay) setBillingStartDay(data.billingStartDay);
+        })
+        .catch(() => {});
     }
   }, [session]);
 
   const filtered = useMemo(() => {
+    const now = new Date();
     let list = [...transactions];
+    
+    if (period !== 'all') {
+      const { start, end } = getBillingPeriod(now, billingStartDay);
+      list = list.filter(t => {
+        const txDate = new Date(t.date);
+        switch (period) {
+          case 'today': {
+            const periodStart = getBillingPeriod(now, billingStartDay).start;
+            return txDate >= periodStart && txDate <= now;
+          }
+          case 'week': {
+            const periodStart = getBillingPeriod(now, billingStartDay).start;
+            const weekStart = new Date(periodStart);
+            const dayOfWeek = weekStart.getUTCDay();
+            const monStart = new Date(weekStart);
+            monStart.setUTCDate(monStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            const weekEnd = new Date(monStart);
+            weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+            return txDate >= monStart && txDate < weekEnd;
+          }
+          case 'month':
+            return isInBillingPeriod(txDate, start, end);
+          default:
+            return true;
+        }
+      });
+    }
+    
     if (search) list = list.filter(t =>
       t.merchant.toLowerCase().includes(search.toLowerCase()));
     if (filterCat) list = list.filter(t => t.categories.includes(filterCat));
@@ -71,7 +110,7 @@ export default function HistoryPage() {
       return sortAsc ? diff : -diff;
     });
     return list;
-  }, [transactions, search, filterCat, filterSource, sortKey, sortAsc]);
+  }, [transactions, search, filterCat, filterSource, sortKey, sortAsc, period, billingStartDay]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paged = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -247,6 +286,23 @@ export default function HistoryPage() {
           <option value="">All sources</option>
           {Object.keys(sourceBadge).map(k => <option key={k} value={k}>{sourceBadge[k].label}</option>)}
         </select>
+
+        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-page)', borderRadius: 'var(--radius-pill)', padding: 4 }}>
+          {(['today', 'week', 'month', 'all'] as Period[]).map(p => (
+            <button
+              key={p}
+              onClick={() => { setPeriod(p); setPage(1); }}
+              style={{
+                padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                background: period === p ? 'var(--accent)' : 'transparent',
+                color: period === p ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              {p === 'today' ? 'Today' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
