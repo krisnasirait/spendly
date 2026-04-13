@@ -91,15 +91,17 @@ export async function PATCH(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
   const updates: Record<string, unknown> = {};
-  if (merchant !== undefined) updates.merchant = merchant;
-  if (amount !== undefined) updates.amount = amount;
+  if (typeof merchant === 'string' && merchant.trim().length > 0) updates.merchant = merchant;
+  if (typeof amount === 'number' && !isNaN(amount)) updates.amount = amount;
   if (date !== undefined) {
     const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) return NextResponse.json({ error: 'invalid date' }, { status: 400 });
     updates.date = parsedDate;
   }
   if (categories !== undefined) {
-    if (!Array.isArray(categories)) return NextResponse.json({ error: 'categories must be array' }, { status: 400 });
+    if (!Array.isArray(categories) || !categories.every(c => typeof c === 'string')) {
+      return NextResponse.json({ error: 'categories must be array of strings' }, { status: 400 });
+    }
     updates.categories = categories;
   }
 
