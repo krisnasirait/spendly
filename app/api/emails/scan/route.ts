@@ -28,53 +28,64 @@ export async function POST() {
     return NextResponse.json({ error: 'No access token' }, { status: 400 });
   }
 
-  const auth = createGmailClient(accessToken);
-  const rawEmails = await fetchTransactionEmails(auth);
+  try {
+    const auth = createGmailClient(accessToken);
+    const emails = await fetchTransactionEmails(auth);
 
-  const scanned = rawEmails.length;
-  const bySource: Record<string, number> = {};
-  const emails = rawEmails.map((email) => {
-    const source = detectSource(email.from);
-    bySource[source] = (bySource[source] || 0) + 1;
-    return {
-      id: email.id,
-      subject: email.subject,
-      from: email.from,
-      date: email.date,
-      snippet: email.snippet,
-      source,
-    };
-  });
-
-  const transactions: (Partial<Transaction> & { userId: string; createdAt: Date })[] = [];
-  for (const email of emails) {
-    const parsed = parseEmail({ subject: email.subject, body: email.snippet, from: email.from });
-    if (parsed) {
-      transactions.push({
-        ...parsed,
-        source: email.source,
-        userId,
-        createdAt: new Date(),
-      });
+    const bySource: Record<string, number> = {};
+    const transactions: (Partial<Transaction> & { userId: string; createdAt: Date })[] = [];
+    
+    for (const email of emails) {
+      const source = detectSource(email.from);
+      bySource[source] = (bySource[source] || 0) + 1;
+      const parsed = parseEmail({ subject: email.subject, body: email.snippet, from: email.from });
+      if (parsed) {
+        transactions.push({
+          ...parsed,
+          source,
+          userId,
+          createdAt: new Date(),
+        });
+      }
     }
+
+    const db = getDb();
+    const batch = db.batch();
+    const txRef = db.collection('users').doc(userId).collection('transactions');
+    
+    transactions.forEach((tx) => {
+      const docRef = txRef.doc();
+      batch.set(docRef, tx);
+    });
+    
+    await batch.commit();
+
+    await db.collection('users').doc(userId).set({
+      lastScanAt: new Date(),
+    }, { merge: true });
+
+    return NextResponse.json({
+      scanned: emails.length,
+      parsed: transactions.length,
+      bySource,
+      emails: emails.map(e => ({
+        id: e.id,
+        subject: e.subject,
+        from: e.from,
+        date: e.date,
+        snippet: e.snippet,
+        source: detectSource(e.from),
+      })),
+      transactions: transactions.map(t => ({
+        merchant: t.merchant,
+        amount: t.amount,
+        date: t.date,
+        category: t.category,
+        source: t.source,
+      })),
+    });
+  } catch (error) {
+    console.error('Scan error:', error);
+    return NextResponse.json({ error: 'Scan failed' }, { status: 500 });
   }
-
-  const parsed = transactions.length;
-
-  const db = getDb();
-  const batch = db.batch();
-  const txRef = db.collection('users').doc(userId).collection('transactions');
-  
-  transactions.forEach((tx) => {
-    const docRef = txRef.doc();
-    batch.set(docRef, tx);
-  });
-  
-  await batch.commit();
-
-  await db.collection('users').doc(userId).set({
-    lastScanAt: new Date(),
-  }, { merge: true });
-
-  return NextResponse.json({ scanned, parsed, bySource, emails, transactions });
 }
