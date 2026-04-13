@@ -4,12 +4,17 @@ export interface Transaction {
   amount: number;
   merchant: string;
   date: Date;
-  category: Category;
+  categories: string[];  // was: category: Category
   source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca';
   createdAt: Date;
 }
 
-export type Category = 'food' | 'shopping' | 'transport' | 'entertainment' | 'other';
+export interface Category {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: Date;
+}
 
 export interface Insight {
   id: string;
