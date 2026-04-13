@@ -53,6 +53,157 @@ const sourceColors: Record<string, { color: string; bg: string }> = {
   bca:       { color: '#005BAC', bg: '#EBF2FF' },
 };
 
+const fmtCurrency = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+
+function SourceBadge({ source }: { source: string }) {
+  const colors = sourceColors[source] ?? { color: '#6B7280', bg: '#F3F4F6' };
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '2px 8px',
+      borderRadius: 999,
+      fontSize: 10,
+      fontWeight: 600,
+      background: colors.bg,
+      color: colors.color,
+    }}>
+      {source.charAt(0).toUpperCase() + source.slice(1)}
+    </span>
+  );
+}
+
+function ScanResultsPanel({ results }: { results: ScanResults }) {
+  const [emailsExpanded, setEmailsExpanded] = useState(true);
+  const [txExpanded, setTxExpanded] = useState(true);
+
+  return (
+    <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{
+        padding: '16px',
+        borderRadius: 12,
+        background: 'var(--bg-page)',
+        border: '1px solid var(--border)',
+      }}>
+        <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Scan Complete</p>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Emails found</span>
+            <p style={{ fontSize: 20, fontWeight: 700 }}>{results.scanned}</p>
+          </div>
+          <div>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Parsed</span>
+            <p style={{ fontSize: 20, fontWeight: 700 }}>{results.parsed}</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          {Object.entries(results.bySource).map(([src, count]) => (
+            <span key={src} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+              {src}: {count}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {results.emails.length > 0 && (
+        <div>
+          <button
+            onClick={() => setEmailsExpanded(!emailsExpanded)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', padding: '10px 0', background: 'none', border: 'none',
+              cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, fontSize: 13,
+            }}
+          >
+            Emails Found ({results.emails.length})
+            <span>{emailsExpanded ? '▲' : '▼'}</span>
+          </button>
+          {emailsExpanded && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
+              {results.emails.map((email) => (
+                <div key={email.id} style={{
+                  padding: 12,
+                  borderRadius: 10,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                    <p style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{email.subject}</p>
+                    <SourceBadge source={email.source} />
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{email.from}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>{email.snippet}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {results.transactions.length > 0 && (
+        <div>
+          <button
+            onClick={() => setTxExpanded(!txExpanded)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', padding: '10px 0', background: 'none', border: 'none',
+              cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, fontSize: 13,
+            }}
+          >
+            Parsed Transactions ({results.transactions.length})
+            <span>{txExpanded ? '▲' : '▼'}</span>
+          </button>
+          {txExpanded && (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table" style={{ marginTop: 8 }}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Merchant</th>
+                    <th>Source</th>
+                    <th>Category</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.transactions.map((tx, i) => {
+                    const badge = sourceColors[tx.source] ?? { color: '#6B7280', bg: '#F3F4F6' };
+                    return (
+                      <tr key={i}>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                        </td>
+                        <td style={{ fontSize: 12, fontWeight: 500 }}>{tx.merchant}</td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                            fontSize: 10, fontWeight: 600, background: badge.bg, color: badge.color,
+                          }}>{tx.source}</span>
+                        </td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
+                        </td>
+                        <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
+                          -{fmtCurrency(tx.amount)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {results.emails.length === 0 && results.transactions.length === 0 && (
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>
+          No transaction emails found. Try adjusting your email sources.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -63,8 +214,6 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [scanResults, setScanResults] = useState<ScanResults | null>(null);
   const [showResults, setShowResults] = useState(false);
-  const [emailsExpanded, setEmailsExpanded] = useState(true);
-  const [txExpanded, setTxExpanded] = useState(true);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -135,155 +284,8 @@ export default function SettingsPage() {
     return <main style={{ padding: '32px' }}><div className="skeleton" style={{ height: 200 }} /></main>;
   }
 
-  function SourceBadge({ source }: { source: string }) {
-    const colors = sourceColors[source] ?? { color: '#6B7280', bg: '#F3F4F6' };
-    return (
-      <span style={{
-        display: 'inline-block',
-        padding: '2px 8px',
-        borderRadius: 999,
-        fontSize: 10,
-        fontWeight: 600,
-        background: colors.bg,
-        color: colors.color,
-      }}>
-        {source.charAt(0).toUpperCase() + source.slice(1)}
-      </span>
-    );
-  }
-
-  function ScanResultsPanel({ results }: { results: ScanResults }) {
-    const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
-
-    return (
-      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{
-          padding: '16px',
-          borderRadius: 12,
-          background: 'var(--bg-page)',
-          border: '1px solid var(--border)',
-        }}>
-          <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Scan Complete</p>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Emails found</span>
-              <p style={{ fontSize: 20, fontWeight: 700 }}>{results.scanned}</p>
-            </div>
-            <div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Parsed</span>
-              <p style={{ fontSize: 20, fontWeight: 700 }}>{results.parsed}</p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-            {Object.entries(results.bySource).map(([src, count]) => (
-              <span key={src} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                {src}: {count}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {results.emails.length > 0 && (
-          <div>
-            <button
-              onClick={() => setEmailsExpanded(!emailsExpanded)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', padding: '10px 0', background: 'none', border: 'none',
-                cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, fontSize: 13,
-              }}
-            >
-              Emails Found ({results.emails.length})
-              <span>{emailsExpanded ? '▲' : '▼'}</span>
-            </button>
-            {emailsExpanded && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
-                {results.emails.map((email) => (
-                  <div key={email.id} style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border)',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                      <p style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{email.subject}</p>
-                      <SourceBadge source={email.source} />
-                    </div>
-                    <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{email.from}</p>
-                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>{email.snippet}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {results.transactions.length > 0 && (
-          <div>
-            <button
-              onClick={() => setTxExpanded(!txExpanded)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', padding: '10px 0', background: 'none', border: 'none',
-                cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, fontSize: 13,
-              }}
-            >
-              Parsed Transactions ({results.transactions.length})
-              <span>{txExpanded ? '▲' : '▼'}</span>
-            </button>
-            {txExpanded && (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="data-table" style={{ marginTop: 8 }}>
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Merchant</th>
-                      <th>Source</th>
-                      <th>Category</th>
-                      <th style={{ textAlign: 'right' }}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.transactions.map((tx, i) => {
-                      const badge = sourceColors[tx.source] ?? { color: '#6B7280', bg: '#F3F4F6' };
-                      return (
-                        <tr key={i}>
-                          <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                          </td>
-                          <td style={{ fontSize: 12, fontWeight: 500 }}>{tx.merchant}</td>
-                          <td>
-                            <span style={{
-                              display: 'inline-block', padding: '2px 8px', borderRadius: 999,
-                              fontSize: 10, fontWeight: 600, background: badge.bg, color: badge.color,
-                            }}>{tx.source}</span>
-                          </td>
-                          <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                            {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
-                          </td>
-                          <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
-                            -{fmt(tx.amount)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {results.emails.length === 0 && results.transactions.length === 0 && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>
-            No transaction emails found. Try adjusting your email sources.
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  const userEmail = session?.user?.email ?? '';
+  const userEmail = session?.user?.email;
+  const avatarInitial = userEmail ? userEmail[0]?.toUpperCase() : '?';
 
   return (
     <main style={{ padding: '32px', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -303,9 +305,9 @@ export default function SettingsPage() {
               background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontWeight: 700, fontSize: 14,
             }}>
-              {userEmail[0]?.toUpperCase()}
+              {avatarInitial}
             </div>
-            <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{userEmail}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{userEmail ?? ''}</span>
           </div>
           <button
             className="btn btn-ghost"
