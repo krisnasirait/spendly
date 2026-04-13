@@ -1,4 +1,4 @@
-import { Category, Transaction } from '@/types';
+import type { ParsedEmail } from './index';
 
 interface TokopediaEmail {
   subject: string;
@@ -6,7 +6,7 @@ interface TokopediaEmail {
   from: string;
 }
 
-export function parseTokopediaEmail(email: TokopediaEmail): Partial<Transaction> | null {
+export function parseTokopediaEmail(email: TokopediaEmail): ParsedEmail | null {
   const amountMatch = email.body.match(/Rp[\s]?([\d,\.]+)/);
   const merchantMatch = email.body.match(/Penjual:\s*(.+)/);
   const dateMatch = email.body.match(/(\d{1,2}\s+\w+\s+\d{4})/);
@@ -16,8 +16,8 @@ export function parseTokopediaEmail(email: TokopediaEmail): Partial<Transaction>
   return {
     amount: parseInt(amountMatch[1].replace(/[,\.]/g, ''), 10),
     merchant: merchantMatch ? merchantMatch[1].trim() : 'Tokopedia',
-    date: dateMatch ? new Date(dateMatch[1]) : new Date(),
-    category: 'shopping' as Category,
+    date: dateMatch ? new Date(dateMatch[1]).toISOString() : new Date().toISOString(),
+    categories: ['shopping'],
     source: 'tokopedia',
   };
 }

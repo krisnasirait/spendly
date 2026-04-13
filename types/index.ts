@@ -3,10 +3,10 @@ export interface Transaction {
   userId: string;
   amount: number;
   merchant: string;
-  date: Date;
-  categories: string[];  // was: category: Category
+  date: string;
+  categories: string[];
   source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo';
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface Category {

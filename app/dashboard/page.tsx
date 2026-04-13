@@ -196,27 +196,6 @@ export default function DashboardPage() {
   }
 
   /* ── derived stats ── */
-  const totalSpend = useMemo(() => filtered.reduce((s, t) => s + t.amount, 0), [filtered]);
-
-  const byCategory = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach((t) => {
-      const cats = t.categories || [t.category];
-      cats.forEach(cat => { map[cat] = (map[cat] ?? 0) + t.amount; });
-    });
-    return Object.entries(map).map(([cat, total]) => ({ cat, total }));
-  }, [filtered]);
-
-  const byMonth = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach((t) => {
-      const d = new Date(t.date);
-      const key = d.toLocaleString('default', { month: 'short' });
-      map[key] = (map[key] ?? 0) + t.amount;
-    });
-    return Object.entries(map).map(([month, spend]) => ({ month, spend, income: Math.round(spend * 1.45) }));
-  }, [filtered]);
-
   const filtered = useMemo(() => {
     const now = new Date();
     const today = new Date();
@@ -245,6 +224,26 @@ export default function DashboardPage() {
       }
     });
   }, [transactions, period]);
+
+  const totalSpend = useMemo(() => filtered.reduce((s, t) => s + t.amount, 0), [filtered]);
+
+  const byCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach((t) => {
+      t.categories.forEach(cat => { map[cat] = (map[cat] ?? 0) + t.amount; });
+    });
+    return Object.entries(map).map(([cat, total]) => ({ cat, total }));
+  }, [filtered]);
+
+  const byMonth = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach((t) => {
+      const d = new Date(t.date);
+      const key = d.toLocaleString('default', { month: 'short' });
+      map[key] = (map[key] ?? 0) + t.amount;
+    });
+    return Object.entries(map).map(([month, spend]) => ({ month, spend, income: Math.round(spend * 1.45) }));
+  }, [filtered]);
 
   const previousPeriodData = useMemo(() => {
     const now = new Date();
@@ -358,7 +357,7 @@ export default function DashboardPage() {
             Welcome back, {firstName}!
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-            Here's what's happening with your spending.
+            Here&apos;s what&apos;s happening with your spending.
           </p>
         </div>
 
@@ -602,9 +601,9 @@ export default function DashboardPage() {
                           }}>{badge.label}</span>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                            {(tx.categories || [tx.category]).map(cat => (
-                              <span key={cat} style={{
+                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                             {tx.categories.map(cat => (
+                               <span key={cat} style={{
                                 display: 'inline-block', padding: '2px 6px', borderRadius: 999,
                                 fontSize: 10, fontWeight: 500,
                                 background: `${categoryColors[cat] || '#94A3B8'}20`,

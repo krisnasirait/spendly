@@ -84,8 +84,7 @@ export default function CategoriesPage() {
     const map: Record<string, { total: number; count: number }> = {};
     categoryData.forEach(c => { map[c.key] = { total: 0, count: 0 }; });
     transactions.forEach((t) => {
-      const cats = t.categories || [t.category];
-      cats.forEach(cat => {
+      t.categories.forEach(cat => {
         if (map[cat]) {
           map[cat].total += t.amount;
           map[cat].count += 1;
@@ -98,7 +97,7 @@ export default function CategoriesPage() {
   const totalAll = Object.values(byCategory).reduce((s, v) => s + v.total, 0);
 
   const selectedTxs = useMemo(() =>
-    selected ? transactions.filter(t => (t.categories || [t.category]).includes(selected))
+    selected ? transactions.filter(t => t.categories.includes(selected))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [],
     [selected, transactions]

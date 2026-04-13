@@ -1,4 +1,4 @@
-import { Category, Transaction } from '@/types';
+import type { ParsedEmail } from './index';
 
 interface ShopeeEmail {
   subject: string;
@@ -6,7 +6,7 @@ interface ShopeeEmail {
   from: string;
 }
 
-export function parseShopeeEmail(email: ShopeeEmail): Partial<Transaction> | null {
+export function parseShopeeEmail(email: ShopeeEmail): ParsedEmail | null {
   const amountMatch = email.body.match(/(?:Total Pembayaran|Total Payment)\s*:\s*Rp\s*([\d,\.]+)/);
   const penjualMatch = email.body.match(/Penjual:\s*(.+)/);
   const merchantMatch = email.body.match(/Toko:\s*(.+)/);
@@ -16,14 +16,14 @@ export function parseShopeeEmail(email: ShopeeEmail): Partial<Transaction> | nul
 
   const date = dateMatch ? (() => {
     const [day, month, year] = dateMatch[1].split('/');
-    return new Date(`${year}-${month}-${day}`);
-  })() : new Date();
+    return new Date(`${year}-${month}-${day}`).toISOString();
+  })() : new Date().toISOString();
 
   return {
     amount: parseInt(amountMatch[1].replace(/[,\.]/g, ''), 10),
     merchant: penjualMatch ? penjualMatch[1].trim() : (merchantMatch ? merchantMatch[1].trim() : 'Shopee'),
     date,
-    category: 'shopping' as Category,
+    categories: ['shopping'],
     source: 'shopee',
   };
 }

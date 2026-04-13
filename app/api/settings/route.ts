@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDb } from '@/lib/firestore';
-import { setDoc } from 'firebase-admin/firestore';
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -58,7 +57,7 @@ export async function PUT(req: NextRequest) {
 
     const db = getDb();
     const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
-    await setDoc(docRef, updates, { merge: true });
+    await docRef.set(updates, { merge: true });
 
     return NextResponse.json({ success: true });
   } catch (error) {

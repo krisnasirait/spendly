@@ -38,12 +38,12 @@ interface ScanResults {
     source: string;
   }>;
   transactions: Array<{
+    id: string;
     merchant: string;
     amount: number;
     date: string;
-    category: string;
+    categories: string[];
     source: string;
-    emailId: string;
   }>;
 }
 
@@ -207,7 +207,7 @@ function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onView
                 <tbody>
                   {results.transactions.map((tx, i) => {
                     const badge = sourceColors[tx.source] ?? { color: '#6B7280', bg: '#F3F4F6' };
-                    const sourceEmail = emailMap[tx.emailId];
+                    const sourceEmail = emailMap[tx.id];
                     return (
                       <tr key={i}>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -221,12 +221,12 @@ function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onView
                           }}>{tx.source}</span>
                         </td>
                         <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                          {(tx.categories || [tx.category]).map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
+                          {tx.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
                         </td>
                         <td style={{ fontSize: 10, color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={sourceEmail?.subject || ''}
                         >
-                          {sourceEmail?.subject || tx.emailId}
+                          {sourceEmail?.subject || tx.id}
                         </td>
                         <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
                           -{fmtCurrency(tx.amount)}
@@ -354,7 +354,7 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
                 <tbody>
                   {results.transactions.map((tx, i) => {
                     const badge = sourceColors[tx.source] ?? { color: '#6B7280', bg: '#F3F4F6' };
-                    const sourceEmail = emailMap[tx.emailId];
+                    const sourceEmail = emailMap[tx.id];
                     return (
                       <tr key={i}>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -368,12 +368,12 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
                           }}>{tx.source}</span>
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          {(tx.categories || [tx.category]).map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
+                          {tx.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
                         </td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={sourceEmail?.subject || ''}
                         >
-                          {sourceEmail?.subject || tx.emailId}
+                          {sourceEmail?.subject || tx.id}
                         </td>
                         <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
                           -{fmtCurrency(tx.amount)}

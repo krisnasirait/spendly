@@ -94,7 +94,7 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
         body: JSON.stringify({ id: transaction.id, merchant, amount, date, categories }),
       });
       if (res.ok) {
-        onSave({ ...transaction, merchant, amount, date: new Date(date), categories });
+        onSave({ ...transaction, merchant, amount, date, categories });
         onClose();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -226,7 +226,7 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
                 width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: 13,
                 color: 'var(--accent)',
               }}>
-                + Create "{newCatInput.trim()}"
+                + Create &quot;{newCatInput.trim()}&quot;
               </button>
             )}
           </div>

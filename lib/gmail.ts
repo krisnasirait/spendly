@@ -74,7 +74,7 @@ export async function fetchTransactionEmails(auth: Auth.OAuth2Client) {
           .trim();
       }
 
-      const rawBody = decodeBody(data.data.payload!) || data.data.snippet || '';
+      const rawBody = decodeBody(data.data.payload as { body?: { data?: string }; parts?: unknown[] }) || data.data.snippet || '';
       const body = htmlToText(rawBody);
       const date = new Date(dateStr);
 

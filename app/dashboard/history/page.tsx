@@ -65,7 +65,7 @@ export default function HistoryPage() {
     let list = [...transactions];
     if (search) list = list.filter(t =>
       t.merchant.toLowerCase().includes(search.toLowerCase()));
-    if (filterCat) list = list.filter(t => t.category === filterCat);
+    if (filterCat) list = list.filter(t => t.categories.includes(filterCat));
     if (filterSource) list = list.filter(t => t.source === filterSource);
     list.sort((a, b) => {
       let diff = 0;
@@ -305,10 +305,10 @@ export default function HistoryPage() {
                           fontSize: 11, fontWeight: 600, background: badge.bg, color: badge.color,
                         }}>{badge.label}</span>
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {(tx.categories || [tx.category]).map(cat => (
-                            <span key={cat} style={{
+                        <td>
+                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                           {tx.categories.map(cat => (
+                             <span key={cat} style={{
                               display: 'inline-block', padding: '2px 8px', borderRadius: 999,
                               fontSize: 11, fontWeight: 500,
                               background: `${categoryColors[cat] || '#94A3B8'}20`,

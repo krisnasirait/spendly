@@ -1,4 +1,4 @@
-import { Category, Transaction } from '@/types';
+import type { ParsedEmail } from './index';
 
 interface TravelokaEmail {
   subject: string;
@@ -6,14 +6,14 @@ interface TravelokaEmail {
   from: string;
 }
 
-export function parseTravelokaEmail(email: TravelokaEmail): Partial<Transaction> | null {
+export function parseTravelokaEmail(email: TravelokaEmail): ParsedEmail | null {
   const amountMatch = email.body.match(/Rp[\s]?([\d,\.]+)/);
   const merchantMatch = email.subject.match(/(Flight|Hotel|Activity)/);
   const dateMatch = email.body.match(/(\d{1,2}\s+\w+\s+\d{4})/);
 
   if (!amountMatch) return null;
 
-  const category: Category = email.subject.toLowerCase().includes('hotel') 
+  const category: string = email.subject.toLowerCase().includes('hotel') 
     ? 'food' 
     : email.subject.toLowerCase().includes('flight')
     ? 'transport'
@@ -22,8 +22,8 @@ export function parseTravelokaEmail(email: TravelokaEmail): Partial<Transaction>
   return {
     amount: parseInt(amountMatch[1].replace(/[,\.]/g, ''), 10),
     merchant: merchantMatch ? `Traveloka - ${merchantMatch[1]}` : 'Traveloka',
-    date: dateMatch ? new Date(dateMatch[1]) : new Date(),
-    category,
+    date: dateMatch ? new Date(dateMatch[1]).toISOString() : new Date().toISOString(),
+    categories: [category],
     source: 'traveloka',
   };
 }

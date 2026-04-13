@@ -9,7 +9,7 @@ function generateInsights(transactions: Transaction[]): Partial<Insight>[] {
   
   const now = new Date();
   const thisWeek = transactions.filter((tx) => {
-    const diff = now.getTime() - tx.date.getTime();
+    const diff = now.getTime() - new Date(tx.date).getTime();
     return diff < 7 * 24 * 60 * 60 * 1000;
   });
   

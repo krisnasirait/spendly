@@ -23,15 +23,17 @@ export async function GET(_req: NextRequest) {
     const data = doc.data() as Omit<Transaction, 'id' | 'userId'> & { date?: Date | string | { toDate?: () => Date } };
     let dateStr = '';
     if (data.date) {
-      if (data.date instanceof Date) {
-        dateStr = data.date.toISOString();
-      } else if (typeof data.date === 'string') {
+      if (typeof data.date === 'string') {
         dateStr = data.date;
-      } else if (data.date && typeof data.date === 'object' && 'toDate' in data.date) {
-        dateStr = (data.date as { toDate: () => Date }).toDate().toISOString();
-      } else if (data.date && typeof data.date === 'object' && 'seconds' in data.date) {
-        const ts = data.date as { seconds: number; nanoseconds?: number };
-        dateStr = new Date(ts.seconds * 1000).toISOString();
+      } else if (typeof data.date === 'object') {
+        if ('toDate' in data.date) {
+          dateStr = (data.date as { toDate: () => Date }).toDate().toISOString();
+        } else if ('seconds' in data.date) {
+          const ts = data.date as { seconds: number; nanoseconds?: number };
+          dateStr = new Date(ts.seconds * 1000).toISOString();
+        } else if ((data.date as unknown) instanceof Date) {
+          dateStr = (data.date as Date).toISOString();
+        }
       }
     }
     return {
@@ -42,7 +44,7 @@ export async function GET(_req: NextRequest) {
       categories: data.categories || [],
       source: data.source,
       date: dateStr,
-      createdAt: data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt,
+      createdAt: typeof data.createdAt === 'string' ? data.createdAt : ((data.createdAt as unknown) instanceof Date ? (data.createdAt as Date).toISOString() : String(data.createdAt)),
     };
   });
 

@@ -49,7 +49,7 @@ export async function POST() {
     const emails = await fetchTransactionEmails(auth);
 
     const bySource: Record<string, number> = {};
-    const transactions: (Partial<Transaction> & { userId: string; createdAt: Date })[] = [];
+    const transactions: (Partial<Transaction> & { userId: string; createdAt: string })[] = [];
     
     for (const email of emails) {
       const source = detectSource(email.from, email.subject);
@@ -70,9 +70,7 @@ export async function POST() {
             ...parsed,
             source,
             userId,
-            createdAt: new Date(),
-            emailId: email.id,
-            categories: [parsed.category || 'other'],
+            createdAt: new Date().toISOString(),
           });
         }
       } catch (e) {
@@ -81,6 +79,36 @@ export async function POST() {
     }
 
     const db = getDb();
+
+    const existingSnap = await db
+      .collection('users')
+      .doc(userId)
+      .collection('transactions')
+      .select('merchant', 'amount', 'date')
+      .get();
+
+    const existingKeys = new Set(
+      existingSnap.docs.map(doc => {
+        const d = doc.data() as { merchant: string; amount: number; date: string | Date };
+        const dateStr = typeof d.date === 'string' ? d.date.substring(0, 10) : '';
+        return `${d.merchant}|${d.amount}|${dateStr}`;
+      })
+    );
+
+    const newTransactions: (typeof transactions[0])[] = [];
+    let duplicates = 0;
+
+    for (const tx of transactions) {
+      const dateStr = tx.date?.substring(0, 10) || '';
+      const key = `${tx.merchant}|${tx.amount}|${dateStr}`;
+      if (existingKeys.has(key)) {
+        duplicates++;
+      } else {
+        newTransactions.push(tx);
+        existingKeys.add(key);
+      }
+    }
+
     const catsSnap = await db.collection('users').doc(userId).collection('categories').get();
     if (catsSnap.empty) {
       const defaultCats = ['food', 'shopping', 'transport', 'entertainment', 'other'];
@@ -95,11 +123,13 @@ export async function POST() {
     const txRef = db.collection('users').doc(userId).collection('transactions');
     
     const BATCH_SIZE = 500;
-    for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
-      const chunk = transactions.slice(i, i + BATCH_SIZE);
+    const txIds: string[] = [];
+    for (let i = 0; i < newTransactions.length; i += BATCH_SIZE) {
+      const chunk = newTransactions.slice(i, i + BATCH_SIZE);
       const batch = db.batch();
       chunk.forEach((tx) => {
         const docRef = txRef.doc();
+        txIds.push(docRef.id);
         batch.set(docRef, tx);
       });
       await batch.commit();
@@ -111,7 +141,8 @@ export async function POST() {
 
     return NextResponse.json({
       scanned: emails.length,
-      parsed: transactions.length,
+      parsed: newTransactions.length,
+      duplicates,
       bySource,
       emails: emails.map(e => ({
         id: e.id,
@@ -121,13 +152,13 @@ export async function POST() {
         snippet: e.snippet,
         source: detectSource(e.from, e.subject),
       })),
-      transactions: transactions.map(t => ({
+      transactions: newTransactions.map((t, i) => ({
+        id: txIds[i],
         merchant: t.merchant,
         amount: t.amount,
         date: t.date,
-        categories: t.categories || [t.category],
+        categories: t.categories,
         source: t.source,
-        emailId: t.emailId,
       })),
     });
   } catch (error) {

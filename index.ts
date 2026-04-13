@@ -6,8 +6,8 @@ import { Transaction } from '@/types';
 export interface ParsedEmail {
   amount: number;
   merchant: string;
-  date: Date;
-  category: Transaction['category'];
+  date: string;
+  categories: string[];
   source: Transaction['source'];
 }
 
