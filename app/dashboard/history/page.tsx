@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import type { Transaction } from '@/types';
+import EditTransactionPanel from '@/components/EditTransactionPanel';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -11,6 +12,11 @@ const fmt = (n: number) =>
 const categoryLabel: Record<string, string> = {
   food: 'Food & Drinks', shopping: 'Shopping',
   transport: 'Transport', entertainment: 'Entertainment', other: 'Other',
+};
+
+const categoryColors: Record<string, string> = {
+  food: '#7C6CF8', shopping: '#A78BFA', transport: '#60A5FA',
+  entertainment: '#F472B6', other: '#94A3B8',
 };
 
 const sourceBadge: Record<string, { label: string; color: string; bg: string }> = {
@@ -37,6 +43,7 @@ export default function HistoryPage() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -159,6 +166,10 @@ export default function HistoryPage() {
     </button>
   );
 
+  function handleSave(updated: Transaction) {
+    setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
+  }
+
   if (status === 'loading' || loading) {
     return (
       <main style={{ padding: '32px 32px 48px' }}>
@@ -266,6 +277,7 @@ export default function HistoryPage() {
                   <th>Category</th>
                   <th style={{ textAlign: 'right' }}><SortBtn col="amount" label="Amount" /></th>
                   <th style={{ width: 40 }}></th>
+                  <th style={{ width: 40 }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -273,7 +285,7 @@ export default function HistoryPage() {
                   const badge = sourceBadge[tx.source] ?? { label: tx.source, color: '#6B7280', bg: '#F3F4F6' };
                   const isSelected = selected.has(tx.id);
                   return (
-                    <tr key={tx.id} style={{ background: isSelected ? 'var(--bg-page)' : undefined }}>
+                    <tr key={tx.id} onClick={() => setEditingTx(tx)} style={{ background: isSelected ? 'var(--bg-page)' : undefined, cursor: 'pointer' }}>
                       <td onClick={() => toggleSelect(tx.id)} style={{ cursor: 'pointer' }}>
                         <input
                           type="checkbox"
@@ -292,11 +304,28 @@ export default function HistoryPage() {
                           fontSize: 11, fontWeight: 600, background: badge.bg, color: badge.color,
                         }}>{badge.label}</span>
                       </td>
-                      <td style={{ color: 'var(--text-secondary)' }}>
-                        {categoryLabel[tx.category] ?? tx.category}
+                      <td>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                          {(tx.categories || [tx.category]).map(cat => (
+                            <span key={cat} style={{
+                              display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                              fontSize: 11, fontWeight: 500,
+                              background: `${categoryColors[cat] || '#94A3B8'}20`,
+                              color: categoryColors[cat] || '#94A3B8',
+                            }}>
+                              {categoryLabel[cat] ?? cat}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>
                         -{fmt(tx.amount)}
+                      </td>
+                      <td>
+                        <button onClick={() => setEditingTx(tx)} style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'var(--text-muted)', fontSize: 14, padding: 4,
+                        }} title="Edit">✎</button>
                       </td>
                       <td>
                         <button
@@ -345,6 +374,13 @@ export default function HistoryPage() {
             Next →
           </button>
         </div>
+      )}
+      {editingTx && (
+        <EditTransactionPanel
+          transaction={editingTx}
+          onClose={() => setEditingTx(null)}
+          onSave={handleSave}
+        />
       )}
     </main>
   );
