@@ -1,21 +1,32 @@
 'use client';
 
+import { useId } from 'react';
+
 interface ToggleProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   label?: string;
+  id?: string;
 }
 
-export function Toggle({ checked, onChange, disabled, label }: ToggleProps) {
+export function Toggle({ checked, onChange, disabled, label, id: idProp }: ToggleProps) {
+  const generatedId = useId();
+  const id = idProp ?? generatedId;
+
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1 }}>
+    <label
+      htmlFor={id}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1 }}
+    >
       <div style={{ position: 'relative' }}>
         <input
           type="checkbox"
+          id={id}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
+          aria-label={label}
           style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }}
         />
         <div style={{
