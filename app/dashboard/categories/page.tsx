@@ -244,6 +244,7 @@ export default function CategoriesPage() {
       }}>
         {categoryData.map(({ key, label, emoji, color }) => {
           const stats = byCategory[key];
+          const info = categoryBudgetInfo[key];
           const pct = totalAll > 0 ? (stats.total / totalAll) * 100 : 0;
           const active = selected === key;
 
@@ -291,9 +292,24 @@ export default function CategoriesPage() {
                   transition: 'width 0.6s ease',
                 }} />
               </div>
-              <p style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)', marginTop: 5 }}>
-                {pct.toFixed(1)}% of total
-              </p>
+              {info.budget > 0 ? (
+                <>
+                  <p style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)', marginTop: 5 }}>
+                    {fmtShort(info.spent)} / {fmtShort(info.budget)}
+                  </p>
+                  <div style={{ marginTop: 4, height: 3, borderRadius: 999, background: active ? 'rgba(255,255,255,0.25)' : 'var(--border)' }}>
+                    <div style={{
+                      height: '100%', borderRadius: 999,
+                      width: `${Math.min(100, (info.spent / info.budget) * 100)}%`,
+                      background: info.spent > info.budget ? 'var(--danger)' : (active ? '#fff' : color),
+                    }} />
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)', marginTop: 5 }}>
+                  {pct.toFixed(1)}% of total
+                </p>
+              )}
             </button>
           );
         })}
