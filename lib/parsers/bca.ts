@@ -7,18 +7,32 @@ interface BCAEmail {
 }
 
 export function parseBCAEmail(email: BCAEmail): Partial<Transaction> | null {
-  const amountMatch = email.body.match(/(?:Total Bill|Total Payment)\s*:\s*IDR\s*([\d,\.]+)/);
   const dateMatch = email.body.match(/Transaction Date\s*:\s*(\d{2}\s+\w+\s+\d{4})/);
   const typeMatch = email.body.match(/Transaction Type\s*:\s*(.+)/);
-
-  if (!amountMatch) return null;
-
-  const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+  
+  const typeLower = typeMatch ? typeMatch[1].toLowerCase() : '';
+  const isCreditCard = typeLower.includes('credit card') || typeLower.includes('paylater');
+  
+  let amount: number;
+  
+  if (isCreditCard) {
+    const paymentMatch = email.body.match(/Total Payment\s*:\s*IDR\s*([\d,\.]+)/);
+    if (paymentMatch) {
+      amount = parseFloat(paymentMatch[1].replace(/,/g, ''));
+    } else {
+      const billMatch = email.body.match(/Total Bill\s*:\s*IDR\s*([\d,\.]+)/);
+      if (!billMatch) return null;
+      amount = parseFloat(billMatch[1].replace(/,/g, ''));
+    }
+  } else {
+    const amountMatch = email.body.match(/(?:Total Bill|Total Payment)\s*:\s*IDR\s*([\d,\.]+)/);
+    if (!amountMatch) return null;
+    amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+  }
   
   let category: Transaction['category'] = 'other';
-  const typeLower = typeMatch ? typeMatch[1].toLowerCase() : '';
   
-  if (typeLower.includes('credit card') || typeLower.includes('paylater')) {
+  if (isCreditCard) {
     category = 'other';
   } else if (typeLower.includes('debit') || typeLower.includes('transfer')) {
     category = 'transport';
@@ -28,7 +42,7 @@ export function parseBCAEmail(email: BCAEmail): Partial<Transaction> | null {
 
   return {
     amount,
-    merchant: 'BCA Payment',
+    merchant: 'BCA',
     date,
     category,
     source: 'bca',
