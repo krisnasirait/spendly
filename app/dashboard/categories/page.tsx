@@ -2,16 +2,45 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { CategoryBreakdown } from '@/components/dashboard/CategoryBreakdown';
-import { CardSkeleton, LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { useEffect, useState, useMemo } from 'react';
 import type { Transaction, Category } from '@/types';
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+
+const fmtShort = (n: number) =>
+  n >= 1_000_000
+    ? `Rp ${(n / 1_000_000).toFixed(1)}jt`
+    : n >= 1_000
+    ? `Rp ${(n / 1_000).toFixed(0)}rb`
+    : `Rp ${n}`;
 
 export default function CategoriesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const categoryData = useMemo(() => {
+    const emojis = ['🍜', '🛍️', '🚗', '🎬', '📦', '💄', '🏠', '💊', '✏️', '🎁'];
+    const colors = ['#7C6CF8', '#A78BFA', '#60A5FA', '#F472B6', '#94A3B8', '#FB7185', '#FBBF24', '#34D399', '#60A5FA', '#A78BFA'];
+    if (categories.length === 0) {
+      return [
+        { key: 'food', label: 'Food & Drinks', emoji: '🍜', color: '#7C6CF8' },
+        { key: 'shopping', label: 'Shopping', emoji: '🛍️', color: '#A78BFA' },
+        { key: 'transport', label: 'Transport', emoji: '🚗', color: '#60A5FA' },
+        { key: 'entertainment', label: 'Entertainment', emoji: '🎬', color: '#F472B6' },
+        { key: 'other', label: 'Other', emoji: '📦', color: '#94A3B8' },
+      ];
+    }
+    return categories.map((c, i) => ({
+      key: c.name,
+      label: c.name.charAt(0).toUpperCase() + c.name.slice(1),
+      emoji: emojis[i % emojis.length],
+      color: colors[i % colors.length],
+    }));
+  }, [categories]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Category | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -19,64 +48,179 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     if (session?.user) {
-      fetch('/api/transactions')
-        .then((res) => res.json())
-        .then((data) => {
-          setTransactions(data.transactions || []);
-          setLoading(false);
-        });
+      Promise.all([
+        fetch('/api/transactions').then(r => r.json()),
+        fetch('/api/categories').then(r => r.json()),
+      ]).then(([txData, catData]) => {
+        setTransactions(txData.transactions || []);
+        setCategories(catData.categories || []);
+        setLoading(false);
+      });
     }
   }, [session]);
 
-  const categories = (['food', 'shopping', 'transport', 'entertainment', 'other'] as Category[])
-    .map((category) => ({
-      category,
-      amount: transactions
-        .filter((tx) => tx.category === category)
-        .reduce((sum, tx) => sum + tx.amount, 0),
-    }))
-    .filter((c) => c.amount > 0);
+  const byCategory = useMemo(() => {
+    const map: Record<Category, { total: number; count: number }> = {
+      food: { total: 0, count: 0 }, shopping: { total: 0, count: 0 },
+      transport: { total: 0, count: 0 }, entertainment: { total: 0, count: 0 }, other: { total: 0, count: 0 },
+    };
+    transactions.forEach((t) => {
+      if (map[t.category]) {
+        map[t.category].total += t.amount;
+        map[t.category].count += 1;
+      }
+    });
+    return map;
+  }, [transactions]);
+
+  const totalAll = Object.values(byCategory).reduce((s, v) => s + v.total, 0);
+
+  const selectedTxs = useMemo(() =>
+    selected ? transactions.filter(t => (t.categories || [t.category]).includes(selected))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : [],
+    [selected, transactions]
+  );
+
+  if (status === 'loading' || loading) {
+    return (
+      <main style={{ padding: '32px 32px 48px' }}>
+        <div className="skeleton" style={{ height: 36, width: 200, marginBottom: 24 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+          {[0,1,2,3,4].map(i => <div key={i} className="card skeleton" style={{ height: 140 }} />)}
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-28 relative">
+    <main style={{ padding: '32px 32px 48px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6 animate-slide-down">
-        <div
-          className="w-1 h-7 rounded-full"
-          style={{ background: 'linear-gradient(180deg, #7c3aed, #ec4899)' }}
-        />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: 'rgba(148,163,184,0.5)' }}>
-            Breakdown
-          </p>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Categories
-          </h1>
-        </div>
+      <div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>Spending by Category</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+          Click a category to drill down into its transactions.
+        </p>
       </div>
 
-      {status === 'loading' || loading ? (
-        <div className="space-y-3">
-          <LoadingSkeleton height="h-52" className="mb-4" />
-          {[1, 2, 3].map((i) => <CardSkeleton key={i} lines={1} />)}
+      {/* Category grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: 16,
+      }}>
+        {categoryData.map(({ key, label, emoji, color }) => {
+          const stats = byCategory[key];
+          const pct = totalAll > 0 ? (stats.total / totalAll) * 100 : 0;
+          const active = selected === key;
+
+          return (
+            <button
+              key={key}
+              id={`cat-card-${key}`}
+              onClick={() => setSelected(active ? null : key)}
+              style={{
+                background: active ? color : 'var(--bg-surface)',
+                border: active ? `2px solid ${color}` : '1.5px solid var(--border)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px 20px 18px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s ease',
+                boxShadow: active ? `0 6px 24px ${color}33` : 'var(--shadow-card)',
+                transform: active ? 'translateY(-2px)' : 'none',
+              }}
+            >
+              <div style={{
+                fontSize: 28, marginBottom: 12,
+                width: 48, height: 48, borderRadius: 14,
+                background: active ? 'rgba(255,255,255,0.2)' : `${color}18`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {emoji}
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : 'var(--text-primary)', marginBottom: 2 }}>
+                {label}
+              </p>
+              <p style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', marginBottom: 12 }}>
+                {stats.count} transaction{stats.count !== 1 ? 's' : ''}
+              </p>
+              <p style={{ fontSize: 18, fontWeight: 700, color: active ? '#fff' : 'var(--text-primary)', marginBottom: 10, letterSpacing: '-0.5px' }}>
+                {fmtShort(stats.total)}
+              </p>
+
+              {/* Progress bar */}
+              <div style={{ height: 4, borderRadius: 999, background: active ? 'rgba(255,255,255,0.25)' : 'var(--border)' }}>
+                <div style={{
+                  height: '100%', borderRadius: 999,
+                  width: `${pct.toFixed(1)}%`,
+                  background: active ? '#fff' : color,
+                  transition: 'width 0.6s ease',
+                }} />
+              </div>
+              <p style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)', marginTop: 5 }}>
+                {pct.toFixed(1)}% of total
+              </p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Drill-down table */}
+      {selected && selectedTxs.length > 0 && (
+        <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 700 }}>
+                {categoryData.find(c => c.key === selected)?.emoji}{' '}
+                {categoryData.find(c => c.key === selected)?.label}
+              </h2>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                {selectedTxs.length} transactions · {fmt(selectedTxs.reduce((s, t) => s + t.amount, 0))}
+              </p>
+            </div>
+            <button onClick={() => setSelected(null)} style={{
+              background: 'var(--bg-page)', border: '1px solid var(--border)',
+              borderRadius: 8, width: 28, height: 28, cursor: 'pointer',
+              fontSize: 16, color: 'var(--text-muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>×</button>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Merchant</th>
+                  <th>Source</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedTxs.map((tx) => (
+                  <tr key={tx.id}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                      {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td style={{ fontWeight: 500 }}>{tx.merchant}</td>
+                    <td style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{tx.source}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>
+                      -{fmt(tx.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      ) : categories.length > 0 ? (
-        <CategoryBreakdown categories={categories} />
-      ) : (
-        <div
-          className="rounded-2xl p-12 text-center animate-fade-in"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <div className="text-4xl mb-4">📊</div>
-          <p className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
-            No data yet
-          </p>
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-            Scan your emails to import transactions
-          </p>
+      )}
+
+      {/* Empty state */}
+      {transactions.length === 0 && (
+        <div className="card" style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)', fontSize: 13 }}>
+          <p style={{ fontSize: 32, marginBottom: 12 }}>🛒</p>
+          <p>No transactions yet. Go to Dashboard and scan your emails to get started!</p>
         </div>
       )}
     </main>
