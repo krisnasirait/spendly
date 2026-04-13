@@ -63,6 +63,7 @@ export async function POST() {
             userId,
             createdAt: new Date(),
             emailId: email.id,
+            categories: [parsed.category || 'other'],
           });
         }
       } catch (e) {
@@ -71,6 +72,17 @@ export async function POST() {
     }
 
     const db = getDb();
+    const catsSnap = await db.collection('users').doc(userId).collection('categories').get();
+    if (catsSnap.empty) {
+      const defaultCats = ['food', 'shopping', 'transport', 'entertainment', 'other'];
+      const batch = db.batch();
+      defaultCats.forEach(name => {
+        const docRef = db.collection('users').doc(userId).collection('categories').doc();
+        batch.set(docRef, { name, createdAt: new Date() });
+      });
+      await batch.commit();
+    }
+
     const txRef = db.collection('users').doc(userId).collection('transactions');
     
     const BATCH_SIZE = 500;
@@ -104,7 +116,7 @@ export async function POST() {
         merchant: t.merchant,
         amount: t.amount,
         date: t.date,
-        category: t.category,
+        categories: t.categories || [t.category],
         source: t.source,
         emailId: t.emailId,
       })),
