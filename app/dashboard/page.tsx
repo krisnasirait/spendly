@@ -242,6 +242,67 @@ export default function DashboardPage() {
     });
   }, [transactions, period]);
 
+  const previousPeriodData = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let start: Date, end: Date;
+    
+    switch (period) {
+      case 'today': {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        start = yesterday;
+        end = today;
+        break;
+      }
+      case 'week': {
+        const dayOfWeek = now.getDay();
+        const thisWeekStart = new Date(today);
+        thisWeekStart.setDate(thisWeekStart.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        const lastWeekStart = new Date(thisWeekStart);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+        start = lastWeekStart;
+        end = thisWeekStart;
+        break;
+      }
+      case 'month': {
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(thisMonthStart);
+        lastMonthEnd.setDate(lastMonthEnd.getDate() - 1);
+        start = lastMonthStart;
+        end = lastMonthEnd;
+        break;
+      }
+      case 'all':
+      default:
+        return { total: 0, count: 0 };
+    }
+    
+    const periodTxs = transactions.filter(t => {
+      const txDate = new Date(t.date);
+      return txDate >= start && txDate < end;
+    });
+    
+    const total = periodTxs.reduce((s, t) => s + t.amount, 0);
+    const count = periodTxs.length;
+    
+    return { total, count };
+  }, [transactions, period]);
+
+  const currentTotal = totalSpend;
+  const previousTotal = previousPeriodData.total;
+  const spendChange = previousTotal > 0 
+    ? ((currentTotal - previousTotal) / previousTotal) * 100 
+    : null;
+
+  const currentCount = filtered.length;
+  const previousCount = previousPeriodData.count;
+  const countChange = previousCount > 0 
+    ? ((currentCount - previousCount) / previousCount) * 100 
+    : null;
+
   const recent = useMemo(() => [...filtered]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 8), [filtered]);
@@ -310,14 +371,14 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           <StatCard
             label="Total Spend"
-            value={fmt(totalSpend)}
-            change={-2.4}
+            value={fmt(currentTotal)}
+            change={spendChange !== null ? spendChange : undefined}
             isNeg
           />
           <StatCard
             label="Transactions"
-            value={String(filtered.length)}
-            change={12.1}
+            value={String(currentCount)}
+            change={countChange !== null ? countChange : undefined}
           />
           <StatCard
             label="Top Category"
@@ -328,7 +389,6 @@ export default function DashboardPage() {
           <StatCard
             label="AI Insights"
             value={String(insights.length)}
-            change={insights.length > 0 ? 6.3 : 0}
           />
         </div>
       )}
