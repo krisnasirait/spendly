@@ -18,7 +18,7 @@ function isValidBcaEmail(from: string, subject: string): boolean {
   return isValidSender && isValidSubject;
 }
 
-function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'unknown' {
+function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'unknown' {
   const lower = from.toLowerCase();
   if (lower.includes('shopee')) return 'shopee';
   if (lower.includes('tokopedia')) return 'tokopedia';
@@ -27,6 +27,7 @@ function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | '
     if (isValidBcaEmail(from, subject)) return 'bca';
     return 'unknown';
   }
+  if (lower.includes('ayo')) return 'ayo';
   return 'unknown';
 }
 

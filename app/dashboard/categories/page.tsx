@@ -63,14 +63,34 @@ export default function CategoriesPage() {
     }
   }, [session]);
 
+  useEffect(() => {
+    function onFocus() {
+      if (session?.user && !loading) {
+        Promise.all([
+          fetch('/api/transactions')
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d) setTransactions(d.transactions || []); }),
+          fetch('/api/categories')
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d) setCategories(d.categories || []); }),
+        ]).catch(() => {});
+      }
+    }
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [session, loading]);
+
   const byCategory = useMemo(() => {
     const map: Record<string, { total: number; count: number }> = {};
     categoryData.forEach(c => { map[c.key] = { total: 0, count: 0 }; });
     transactions.forEach((t) => {
-      if (map[t.category]) {
-        map[t.category].total += t.amount;
-        map[t.category].count += 1;
-      }
+      const cats = t.categories || [t.category];
+      cats.forEach(cat => {
+        if (map[cat]) {
+          map[cat].total += t.amount;
+          map[cat].count += 1;
+        }
+      });
     });
     return map;
   }, [transactions, categoryData]);

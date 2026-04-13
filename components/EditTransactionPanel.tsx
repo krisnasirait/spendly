@@ -52,6 +52,16 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
 
   function addCategory(name: string) {
     if (name && !categories.includes(name)) {
+      const exists = allCategories.some(c => c.name.toLowerCase() === name.toLowerCase());
+      if (!exists) {
+        fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        }).then(r => r.ok && r.json()).then(newCat => {
+          if (newCat) setAllCategories(prev => [...prev, newCat]);
+        }).catch(() => {});
+      }
       setCategories(prev => [...prev, name]);
     }
     setNewCatInput('');

@@ -52,6 +52,7 @@ const sourceColors: Record<string, { color: string; bg: string }> = {
   tokopedia: { color: '#03AC0E', bg: '#F0FFF1' },
   traveloka: { color: '#0064D2', bg: '#EBF4FF' },
   bca:       { color: '#005BAC', bg: '#EBF2FF' },
+  ayo:       { color: '#FF6B00', bg: '#FFF4EE' },
 };
 
 const fmtCurrency = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -220,7 +221,7 @@ function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onView
                           }}>{tx.source}</span>
                         </td>
                         <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                          {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
+                          {(tx.categories || [tx.category]).map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
                         </td>
                         <td style={{ fontSize: 10, color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={sourceEmail?.subject || ''}
@@ -367,7 +368,7 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
                           }}>{tx.source}</span>
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
+                          {(tx.categories || [tx.category]).map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
                         </td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={sourceEmail?.subject || ''}
@@ -393,7 +394,7 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca'], scanPeriodDays: 30 });
+  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);

@@ -24,6 +24,7 @@ const sourceBadge: Record<string, { label: string; color: string; bg: string }> 
   tokopedia: { label: 'Tokopedia', color: '#03AC0E', bg: '#F0FFF1' },
   traveloka: { label: 'Traveloka', color: '#0064D2', bg: '#EBF4FF' },
   bca:       { label: 'BCA',       color: '#005BAC', bg: '#EBF2FF' },
+  ayo:       { label: 'AYO',       color: '#FF6B00', bg: '#FFF4EE' },
 };
 
 const ITEMS_PER_PAGE = 15;

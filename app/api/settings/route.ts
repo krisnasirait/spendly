@@ -22,7 +22,7 @@ export async function GET() {
     const snap = await docRef.get();
 
     if (!snap.exists) {
-      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca'], scanPeriodDays: 30 });
+      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30 });
     }
 
     return NextResponse.json(snap.data());
