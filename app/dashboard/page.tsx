@@ -244,35 +244,34 @@ export default function DashboardPage() {
 
   const previousPeriodData = useMemo(() => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     let start: Date, end: Date;
     
     switch (period) {
       case 'today': {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        start = yesterday;
-        end = today;
+        const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const yesterdayUtc = new Date(todayUtc);
+        yesterdayUtc.setUTCDate(yesterdayUtc.getUTCDate() - 1);
+        start = yesterdayUtc;
+        end = todayUtc;
         break;
       }
       case 'week': {
-        const dayOfWeek = now.getDay();
-        const thisWeekStart = new Date(today);
-        thisWeekStart.setDate(thisWeekStart.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        const dayOfWeek = now.getUTCDay();
+        const thisWeekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        thisWeekStart.setUTCDate(thisWeekStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
         const lastWeekStart = new Date(thisWeekStart);
-        lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+        lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
         start = lastWeekStart;
         end = thisWeekStart;
         break;
       }
       case 'month': {
-        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthEnd = new Date(thisMonthStart);
-        lastMonthEnd.setDate(lastMonthEnd.getDate() - 1);
-        start = lastMonthStart;
-        end = lastMonthEnd;
+        const thisMonthStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        const lastMonthStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+        const lastMonthEndUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        start = lastMonthStartUtc;
+        end = lastMonthEndUtc;
         break;
       }
       case 'all':
@@ -282,7 +281,8 @@ export default function DashboardPage() {
     
     const periodTxs = transactions.filter(t => {
       const txDate = new Date(t.date);
-      return txDate >= start && txDate < end;
+      const txDateUtc = new Date(Date.UTC(txDate.getFullYear(), txDate.getMonth(), txDate.getDate()));
+      return txDateUtc >= start && txDateUtc < end;
     });
     
     const total = periodTxs.reduce((s, t) => s + t.amount, 0);
