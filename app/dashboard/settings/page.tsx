@@ -39,10 +39,17 @@ export default function SettingsPage() {
   }, [status, router]);
 
   const loadSettings = useCallback(async () => {
-    const res = await fetch('/api/settings');
-    const data = await res.json();
-    setSettings(data);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/settings');
+      if (!res.ok) throw new Error('Failed to load settings');
+      const data = await res.json();
+      setSettings(data);
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+      setToast({ message: 'Failed to load settings', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -51,13 +58,20 @@ export default function SettingsPage() {
 
   async function saveSettings(newSettings: Settings) {
     setSaving(true);
-    await fetch('/api/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newSettings),
-    });
-    setSettings(newSettings);
-    setSaving(false);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      setSettings(newSettings);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setToast({ message: 'Failed to save settings', type: 'error' });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function toggleSource(key: string) {
@@ -125,11 +139,11 @@ export default function SettingsPage() {
         description="Choose which merchants to scan for transactions"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {SOURCES.map(({ key, label }) => (
+          {SOURCES.map(({ key, label, query }) => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{label}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{SOURCES.find(s => s.key === key)?.query}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{query}</p>
               </div>
               <Toggle
                 checked={settings.sources.includes(key)}
