@@ -35,10 +35,29 @@ export async function fetchTransactionEmails(auth: Auth.OAuth2Client) {
       const subject = headers.find((h) => h.name === 'Subject')?.value || '';
       const from = headers.find((h) => h.name === 'From')?.value || '';
       const dateStr = headers.find((h) => h.name === 'Date')?.value || '';
-      const body = data.data.snippet || '';
-      
+
+      function decodeBody(payload: { body?: { data?: string }; parts?: unknown[] }): string {
+        if (payload.body?.data) {
+          return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+        }
+        if (payload.parts) {
+          for (const part of payload.parts as { body?: { data?: string }; parts?: unknown[]; mimeType?: string }[]) {
+            if (part.mimeType === 'text/plain' || part.mimeType === 'text/html') {
+              const decoded = decodeBody(part);
+              if (decoded) return decoded;
+            }
+          }
+          for (const part of payload.parts as { body?: { data?: string }; parts?: unknown[] }[]) {
+            const decoded = decodeBody(part);
+            if (decoded) return decoded;
+          }
+        }
+        return '';
+      }
+
+      const body = decodeBody(data.data.payload!) || data.data.snippet || '';
       const date = new Date(dateStr);
-      
+
       return { id: msg.id!, subject, from, date, snippet: body };
     })
   );
