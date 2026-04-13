@@ -6,12 +6,27 @@ import { createGmailClient, fetchTransactionEmails } from '@/lib/gmail';
 import { parseEmail } from '@/lib/parsers';
 import type { Transaction } from '@/types';
 
-function detectSource(from: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'unknown' {
+function isValidBcaEmail(from: string, subject: string): boolean {
+  const lowerFrom = from.toLowerCase();
+  const lowerSubject = subject.toLowerCase();
+  const validSenders = ['bca@bca.co.id', 'kartukreditbca@klikbca.com'];
+  const validSubjects = ['internet transaction journal', 'credit card transaction notification'];
+  
+  const isValidSender = validSenders.some(s => lowerFrom.includes(s));
+  const isValidSubject = validSubjects.some(s => lowerSubject.includes(s));
+  
+  return isValidSender && isValidSubject;
+}
+
+function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'unknown' {
   const lower = from.toLowerCase();
   if (lower.includes('shopee')) return 'shopee';
   if (lower.includes('tokopedia')) return 'tokopedia';
   if (lower.includes('traveloka')) return 'traveloka';
-  if (lower.includes('bca')) return 'bca';
+  if (lower.includes('bca')) {
+    if (isValidBcaEmail(from, subject)) return 'bca';
+    return 'unknown';
+  }
   return 'unknown';
 }
 
@@ -36,7 +51,7 @@ export async function POST() {
     const transactions: (Partial<Transaction> & { userId: string; createdAt: Date })[] = [];
     
     for (const email of emails) {
-      const source = detectSource(email.from);
+      const source = detectSource(email.from, email.subject);
       if (source === 'unknown') continue;
       bySource[source] = (bySource[source] || 0) + 1;
       try {
@@ -82,7 +97,7 @@ export async function POST() {
         from: e.from,
         date: e.date,
         snippet: e.snippet,
-        source: detectSource(e.from),
+        source: detectSource(e.from, e.subject),
       })),
       transactions: transactions.map(t => ({
         merchant: t.merchant,
