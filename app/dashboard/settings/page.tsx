@@ -72,7 +72,7 @@ function SourceBadge({ source }: { source: string }) {
   );
 }
 
-function ScanResultsPanel({ results }: { results: ScanResults }) {
+function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onViewAll: () => void }) {
   const [emailsExpanded, setEmailsExpanded] = useState(true);
   const [txExpanded, setTxExpanded] = useState(true);
 
@@ -119,7 +119,25 @@ function ScanResultsPanel({ results }: { results: ScanResults }) {
           </button>
           {emailsExpanded && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
-              {results.emails.map((email) => (
+              {results.emails.length > 10 && (
+                <button
+                  onClick={onViewAll}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-surface)',
+                    color: 'var(--accent)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    alignSelf: 'center',
+                  }}
+                >
+                  View all {results.emails.length} emails
+                </button>
+              )}
+              {results.emails.slice(0, 10).map((email) => (
                 <div key={email.id} style={{
                   padding: 12,
                   borderRadius: 10,
@@ -154,6 +172,24 @@ function ScanResultsPanel({ results }: { results: ScanResults }) {
           </button>
           {txExpanded && (
             <div style={{ overflowX: 'auto' }}>
+              {results.transactions.length > 10 && (
+                <button
+                  onClick={onViewAll}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-surface)',
+                    color: 'var(--accent)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    marginBottom: 12,
+                  }}
+                >
+                  View all {results.transactions.length} transactions
+                </button>
+              )}
               <table className="data-table" style={{ marginTop: 8 }}>
                 <thead>
                   <tr>
@@ -204,6 +240,138 @@ function ScanResultsPanel({ results }: { results: ScanResults }) {
   );
 }
 
+function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose: () => void }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9998,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: 'var(--bg-surface)',
+          borderRadius: 16,
+          width: '100%',
+          maxWidth: 900,
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        }}
+      >
+        <div style={{
+          padding: '20px 24px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>Scan Results</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              {results.scanned} emails found, {results.parsed} parsed into transactions
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-page)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-muted)',
+              fontSize: 16,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflow: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
+              Emails ({results.emails.length})
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 300, overflowY: 'auto' }}>
+              {results.emails.map((email) => (
+                <div key={email.id} style={{
+                  padding: 14,
+                  borderRadius: 10,
+                  background: 'var(--bg-page)',
+                  border: '1px solid var(--border)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, flex: 1, color: 'var(--text-primary)' }}>{email.subject}</p>
+                    <SourceBadge source={email.source} />
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{email.from}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>{email.snippet}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>
+              Parsed Transactions ({results.transactions.length})
+            </h3>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Merchant</th>
+                    <th>Source</th>
+                    <th>Category</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.transactions.map((tx, i) => {
+                    const badge = sourceColors[tx.source] ?? { color: '#6B7280', bg: '#F3F4F6' };
+                    return (
+                      <tr key={i}>
+                        <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                        </td>
+                        <td style={{ fontSize: 12, fontWeight: 500 }}>{tx.merchant}</td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                            fontSize: 10, fontWeight: 600, background: badge.bg, color: badge.color,
+                          }}>{tx.source}</span>
+                        </td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
+                        </td>
+                        <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
+                          -{fmtCurrency(tx.amount)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -214,6 +382,7 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [scanResults, setScanResults] = useState<ScanResults | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [showFullResults, setShowFullResults] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -236,6 +405,13 @@ export default function SettingsPage() {
   useEffect(() => {
     if (session?.user) loadSettings();
   }, [session, loadSettings]);
+
+  useEffect(() => {
+    if (!showFullResults) return;
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowFullResults(false); };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [showFullResults]);
 
   async function saveSettings(newSettings: Settings) {
     setSaving(true);
@@ -379,11 +555,14 @@ export default function SettingsPage() {
         </button>
         {scanning && <div className="skeleton" style={{ height: 100, marginTop: 16 }} />}
         {!scanning && showResults && scanResults && (
-          <ScanResultsPanel results={scanResults} />
+          <ScanResultsPanel results={scanResults} onViewAll={() => setShowFullResults(true)} />
         )}
       </SettingsSection>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {showFullResults && scanResults && (
+        <ScanResultsModal results={scanResults} onClose={() => setShowFullResults(false)} />
+      )}
     </main>
   );
 }
