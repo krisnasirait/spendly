@@ -213,27 +213,25 @@ export default function DashboardPage() {
 
   const filtered = useMemo(() => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
     return transactions.filter(t => {
       const txDate = new Date(t.date);
-      const txDateUtc = new Date(Date.UTC(txDate.getUTCFullYear(), txDate.getUTCMonth(), txDate.getUTCDate()));
-      const todayUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-      
+      txDate.setUTCHours(0, 0, 0, 0);
+
       switch (period) {
         case 'today':
-          return txDateUtc >= todayUtc;
+          return txDate >= today;
         case 'week': {
-          const dayOfWeek = now.getDay();
-          const monday = new Date(today);
-          monday.setDate(monday.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-          const mondayUtc = new Date(Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate()));
-          return txDateUtc >= mondayUtc;
+          const dayOfWeek = now.getUTCDay();
+          const thisWeekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+          thisWeekStart.setUTCDate(thisWeekStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+          return txDate >= thisWeekStart;
         }
         case 'month': {
-          const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-          const firstOfMonthUtc = new Date(Date.UTC(firstOfMonth.getFullYear(), firstOfMonth.getMonth(), 1));
-          return txDateUtc >= firstOfMonthUtc;
+          const firstOfMonthUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+          return txDate >= firstOfMonthUtc;
         }
         case 'all':
         default:
@@ -244,12 +242,13 @@ export default function DashboardPage() {
 
   const previousPeriodData = useMemo(() => {
     const now = new Date();
-    
+
     let start: Date, end: Date;
-    
+
     switch (period) {
       case 'today': {
-        const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const todayUtc = new Date();
+        todayUtc.setUTCHours(0, 0, 0, 0);
         const yesterdayUtc = new Date(todayUtc);
         yesterdayUtc.setUTCDate(yesterdayUtc.getUTCDate() - 1);
         start = yesterdayUtc;
@@ -267,7 +266,6 @@ export default function DashboardPage() {
         break;
       }
       case 'month': {
-        const thisMonthStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
         const lastMonthStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
         const lastMonthEndUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
         start = lastMonthStartUtc;
@@ -278,16 +276,16 @@ export default function DashboardPage() {
       default:
         return { total: 0, count: 0 };
     }
-    
+
     const periodTxs = transactions.filter(t => {
       const txDate = new Date(t.date);
-      const txDateUtc = new Date(Date.UTC(txDate.getUTCFullYear(), txDate.getUTCMonth(), txDate.getUTCDate()));
-      return txDateUtc >= start && txDateUtc < end;
+      txDate.setUTCHours(0, 0, 0, 0);
+      return txDate >= start && txDate < end;
     });
-    
+
     const total = periodTxs.reduce((s, t) => s + t.amount, 0);
     const count = periodTxs.length;
-    
+
     return { total, count };
   }, [transactions, period]);
 
