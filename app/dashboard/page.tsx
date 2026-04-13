@@ -217,18 +217,23 @@ export default function DashboardPage() {
     
     return transactions.filter(t => {
       const txDate = new Date(t.date);
+      const txDateUtc = new Date(Date.UTC(txDate.getFullYear(), txDate.getMonth(), txDate.getDate()));
+      const todayUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      
       switch (period) {
         case 'today':
-          return txDate >= today;
+          return txDateUtc >= todayUtc;
         case 'week': {
           const dayOfWeek = now.getDay();
           const monday = new Date(today);
           monday.setDate(monday.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-          return txDate >= monday;
+          const mondayUtc = new Date(Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate()));
+          return txDateUtc >= mondayUtc;
         }
         case 'month': {
           const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-          return txDate >= firstOfMonth;
+          const firstOfMonthUtc = new Date(Date.UTC(firstOfMonth.getFullYear(), firstOfMonth.getMonth(), 1));
+          return txDateUtc >= firstOfMonthUtc;
         }
         case 'all':
         default:
@@ -311,7 +316,7 @@ export default function DashboardPage() {
           />
           <StatCard
             label="Transactions"
-            value={String(transactions.length)}
+            value={String(filtered.length)}
             change={12.1}
           />
           <StatCard
