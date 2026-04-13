@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest) {
       userId,
       merchant: data.merchant,
       amount: data.amount,
-      category: data.category,
+      categories: data.categories || [],
       source: data.source,
       date: dateStr,
       createdAt: data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt,
@@ -78,4 +78,29 @@ export async function DELETE(req: NextRequest) {
   }
 
   return NextResponse.json({ error: 'No transaction ID or IDs provided' }, { status: 400 });
+}
+
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const body = await req.json();
+  const { id, merchant, amount, date, categories } = body;
+
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  const updates: Record<string, unknown> = {};
+  if (merchant !== undefined) updates.merchant = merchant;
+  if (amount !== undefined) updates.amount = amount;
+  if (date !== undefined) updates.date = new Date(date);
+  if (categories !== undefined) {
+    if (!Array.isArray(categories)) return NextResponse.json({ error: 'categories must be array' }, { status: 400 });
+    updates.categories = categories;
+  }
+
+  const db = getDb();
+  await db.collection('users').doc(userId).collection('transactions').doc(id).update(updates);
+
+  return NextResponse.json({ success: true });
 }
