@@ -6,7 +6,7 @@ import { createGmailClient, fetchTransactionEmails } from '@/lib/gmail';
 import { parseEmail } from '@/lib/parsers';
 import type { Transaction } from '@/types';
 
-function detectSource(from: string): string {
+function detectSource(from: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'unknown' {
   const lower = from.toLowerCase();
   if (lower.includes('shopee')) return 'shopee';
   if (lower.includes('tokopedia')) return 'tokopedia';
@@ -37,6 +37,7 @@ export async function POST() {
     
     for (const email of emails) {
       const source = detectSource(email.from);
+      if (source === 'unknown') continue;
       bySource[source] = (bySource[source] || 0) + 1;
       try {
         const parsed = parseEmail({ subject: email.subject, body: email.snippet, from: email.from });
