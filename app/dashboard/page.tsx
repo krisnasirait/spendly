@@ -393,7 +393,7 @@ export default function DashboardPage() {
           <StatCard
             label="Top Category"
             value={byCategory.sort((a, b) => b.total - a.total)[0]
-              ? categoryLabel[byCategory.sort((a, b) => b.total - a.total)[0].cat]
+              ? (categoryLabel[byCategory.sort((a, b) => b.total - a.total)[0].cat] || byCategory.sort((a, b) => b.total - a.total)[0].cat.charAt(0).toUpperCase() + byCategory.sort((a, b) => b.total - a.total)[0].cat.slice(1))
               : '—'}
           />
           <StatCard
@@ -492,7 +492,7 @@ export default function DashboardPage() {
                       width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
                       background: getCategoryColor(cat),
                     }} />
-                    <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{categoryLabel[cat]}</span>
+                    <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{categoryLabel[cat] || cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fmtShort(total)}</span>
                   </li>
                 ))}
