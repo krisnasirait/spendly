@@ -48,6 +48,8 @@ export default function CategoriesPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('month');
   const [billingStartDay, setBillingStartDay] = useState(1);
+  const [editingBudget, setEditingBudget] = useState<string | null>(null);
+  const [budgetInput, setBudgetInput] = useState('');
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -140,6 +142,48 @@ export default function CategoriesPage() {
     : [],
     [selected, filteredTransactions]
   );
+
+  const categoryBudgetInfo = useMemo(() => {
+    const now = new Date();
+    const { start, end } = getBillingPeriod(now, billingStartDay);
+    const daysRemaining = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const info: Record<string, { budget: number; spent: number; daysLeft: number; dailyBudget: number }> = {};
+    
+    categoryData.forEach(c => {
+      const catBudget = categories.find(cat => cat.name === c.key)?.budget;
+      const catSpent = byCategory[c.key]?.total || 0;
+      info[c.key] = {
+        budget: catBudget || 0,
+        spent: catSpent,
+        daysLeft: daysRemaining,
+        dailyBudget: catBudget && catBudget > catSpent && daysRemaining > 0
+          ? Math.round((catBudget - catSpent) / daysRemaining)
+          : 0,
+      };
+    });
+    
+    return info;
+  }, [categoryData, categories, byCategory, billingStartDay]);
+
+  async function saveBudget(categoryName: string, budget: number | null) {
+    const category = categories.find(c => c.name === categoryName);
+    if (!category) return;
+    
+    try {
+      const res = await fetch(`/api/categories?id=${category.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ budget: budget ?? null }),
+      });
+      if (res.ok) {
+        setCategories(prev => prev.map(c => c.id === category.id ? { ...c, budget: budget ?? undefined } : c));
+      }
+    } catch {} finally {
+      setEditingBudget(null);
+      setBudgetInput('');
+    }
+  }
 
   if (status === 'loading' || loading) {
     return (
