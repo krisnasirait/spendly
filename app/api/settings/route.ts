@@ -21,7 +21,7 @@ export async function GET() {
     const snap = await docRef.get();
 
     if (!snap.exists) {
-      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30 });
+      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1 });
     }
 
     return NextResponse.json(snap.data());
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { sources, scanPeriodDays } = body;
+    const { sources, scanPeriodDays, billingStartDay } = body;
 
     if (sources !== undefined && !Array.isArray(sources)) {
       return NextResponse.json({ error: 'sources must be an array' }, { status: 400 });
@@ -50,10 +50,16 @@ export async function PUT(req: NextRequest) {
     if (scanPeriodDays !== undefined && (typeof scanPeriodDays !== 'number' || ![7, 30, 90].includes(scanPeriodDays))) {
       return NextResponse.json({ error: 'scanPeriodDays must be 7, 30, or 90' }, { status: 400 });
     }
+    if (billingStartDay !== undefined) {
+      if (typeof billingStartDay !== 'number' || billingStartDay < 1 || billingStartDay > 28) {
+        return NextResponse.json({ error: 'billingStartDay must be a number between 1 and 28' }, { status: 400 });
+      }
+    }
 
     const updates: Record<string, unknown> = {};
     if (sources !== undefined) updates.sources = sources;
     if (scanPeriodDays !== undefined) updates.scanPeriodDays = scanPeriodDays;
+    if (billingStartDay !== undefined) updates.billingStartDay = billingStartDay;
 
     const db = getDb();
     const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
