@@ -19,11 +19,32 @@ export async function GET(_req: NextRequest) {
     .orderBy('date', 'desc')
     .get();
 
-  const transactions: Transaction[] = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    userId,
-    ...(doc.data() as Omit<Transaction, 'id' | 'userId'>),
-  }));
+  const transactions: Transaction[] = snapshot.docs.map((doc) => {
+    const data = doc.data() as Omit<Transaction, 'id' | 'userId'> & { date?: Date | string | { toDate?: () => Date } };
+    let dateStr = '';
+    if (data.date) {
+      if (data.date instanceof Date) {
+        dateStr = data.date.toISOString();
+      } else if (typeof data.date === 'string') {
+        dateStr = data.date;
+      } else if (data.date && typeof data.date === 'object' && 'toDate' in data.date) {
+        dateStr = (data.date as { toDate: () => Date }).toDate().toISOString();
+      } else if (data.date && typeof data.date === 'object' && 'seconds' in data.date) {
+        const ts = data.date as { seconds: number; nanoseconds?: number };
+        dateStr = new Date(ts.seconds * 1000).toISOString();
+      }
+    }
+    return {
+      id: doc.id,
+      userId,
+      merchant: data.merchant,
+      amount: data.amount,
+      category: data.category,
+      source: data.source,
+      date: dateStr,
+      createdAt: data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt,
+    };
+  });
 
   return NextResponse.json({ transactions });
 }
