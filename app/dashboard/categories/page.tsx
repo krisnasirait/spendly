@@ -315,7 +315,6 @@ export default function CategoriesPage() {
         })}
       </div>
 
-      {/* Drill-down table */}
       {selected && selectedTxs.length > 0 && (
         <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -328,39 +327,133 @@ export default function CategoriesPage() {
                 {selectedTxs.length} transactions · {fmt(selectedTxs.reduce((s, t) => s + t.amount, 0))}
               </p>
             </div>
-            <button onClick={() => setSelected(null)} style={{
-              background: 'var(--bg-page)', border: '1px solid var(--border)',
-              borderRadius: 8, width: 28, height: 28, cursor: 'pointer',
-              fontSize: 16, color: 'var(--text-muted)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>×</button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {editingBudget === selected ? (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    placeholder="Budget (Rp)"
+                    value={budgetInput}
+                    onChange={e => setBudgetInput(e.target.value)}
+                    style={{
+                      padding: '6px 10px', borderRadius: 8,
+                      border: '1.5px solid var(--border)', background: 'var(--bg-page)',
+                      fontSize: 13, width: 120,
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const val = budgetInput.trim();
+                      saveBudget(selected, val ? Number(val) : null);
+                    }}
+                    className="btn btn-primary"
+                    style={{ padding: '6px 12px', fontSize: 12 }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setEditingBudget(null); setBudgetInput(''); }}
+                    className="btn btn-ghost"
+                    style={{ padding: '6px 12px', fontSize: 12 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    const cat = categories.find(c => c.name === selected);
+                    setBudgetInput(cat?.budget?.toString() || '');
+                    setEditingBudget(selected);
+                  }}
+                  style={{
+                    background: 'var(--bg-page)', border: '1px solid var(--border)',
+                    borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+                    fontSize: 12, color: 'var(--text-secondary)',
+                  }}
+                >
+                  {categoryBudgetInfo[selected]?.budget > 0 ? 'Edit Budget' : 'Set Budget'}
+                </button>
+              )}
+              <button onClick={() => setSelected(null)} style={{
+                background: 'var(--bg-page)', border: '1px solid var(--border)',
+                borderRadius: 8, width: 28, height: 28, cursor: 'pointer',
+                fontSize: 16, color: 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>×</button>
+            </div>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Merchant</th>
-                  <th>Source</th>
-                  <th style={{ textAlign: 'right' }}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedTxs.map((tx) => (
-                  <tr key={tx.id}>
-                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                      {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td style={{ fontWeight: 500 }}>{tx.merchant}</td>
-                    <td style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{tx.source}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>
-                      -{fmt(tx.amount)}
-                    </td>
+
+          {editingBudget === selected ? null : (
+            categoryBudgetInfo[selected]?.budget > 0 ? (
+              <div style={{ padding: 24 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      Spent: {fmt(categoryBudgetInfo[selected].spent)} of {fmt(categoryBudgetInfo[selected].budget)}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>
+                      {Math.round((categoryBudgetInfo[selected].spent / categoryBudgetInfo[selected].budget) * 100)}%
+                    </span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 999, background: 'var(--border)' }}>
+                    <div style={{
+                      height: '100%', borderRadius: 999,
+                      width: `${Math.min(100, (categoryBudgetInfo[selected].spent / categoryBudgetInfo[selected].budget) * 100)}%`,
+                      background: categoryBudgetInfo[selected].spent > categoryBudgetInfo[selected].budget ? 'var(--danger)' : 'var(--success)',
+                      transition: 'width 0.3s ease',
+                    }} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 24 }}>
+                  <div>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Days remaining</p>
+                    <p style={{ fontSize: 18, fontWeight: 700 }}>{categoryBudgetInfo[selected].daysLeft}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Daily budget left</p>
+                    <p style={{ fontSize: 18, fontWeight: 700, color: categoryBudgetInfo[selected].dailyBudget < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                      {categoryBudgetInfo[selected].dailyBudget > 0 ? fmtShort(categoryBudgetInfo[selected].dailyBudget) : 'No budget'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+                <p style={{ fontSize: 13 }}>No budget set for this category</p>
+                <p style={{ fontSize: 12, marginTop: 4 }}>Click &quot;Set Budget&quot; to track your spending</p>
+              </div>
+            )
+          )}
+
+          {editingBudget !== selected && (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Merchant</th>
+                    <th>Source</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {selectedTxs.map((tx) => (
+                    <tr key={tx.id}>
+                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                        {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td style={{ fontWeight: 500 }}>{tx.merchant}</td>
+                      <td style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{tx.source}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>
+                        -{fmt(tx.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
