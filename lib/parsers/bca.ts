@@ -40,9 +40,12 @@ export function parseBCAEmail(email: BCAEmail): Partial<Transaction> | null {
 
   const date = dateMatch ? new Date(dateMatch[1].replace(/(\d{2})\s+(\w+)\s+(\d{4})/, '$2 $1, $3')) : new Date();
 
+  const companyMatch = email.body.match(/Company\/Product Name\s*:\s*(.+)/);
+  const merchant = companyMatch ? companyMatch[1].trim() : 'BCA';
+
   return {
     amount,
-    merchant: 'BCA',
+    merchant,
     date,
     category,
     source: 'bca',
