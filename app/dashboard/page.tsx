@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import EditTransactionPanel from '@/components/EditTransactionPanel';
 
 /* ─── helpers ───────────────────────────────────────────────── */
 const fmt = (n: number) =>
@@ -162,6 +163,7 @@ export default function DashboardPage() {
   const [scanning, setScanning] = useState(false);
   type Period = 'today' | 'week' | 'month' | 'all';
   const [period, setPeriod] = useState<Period>('month');
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -187,6 +189,10 @@ export default function DashboardPage() {
     await fetch('/api/emails/scan', { method: 'POST' });
     await loadData();
     setScanning(false);
+  }
+
+  function handleSave(updated: Transaction) {
+    setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
   }
 
   /* ── derived stats ── */
@@ -583,7 +589,7 @@ export default function DashboardPage() {
                   {recent.map((tx) => {
                     const badge = sourceBadge[tx.source] ?? { label: tx.source, color: '#6B7280', bg: '#F3F4F6' };
                     return (
-                      <tr key={tx.id}>
+                      <tr key={tx.id} onClick={() => setEditingTx(tx)} style={{ cursor: 'pointer' }}>
                         <td style={{ color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>
                           {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                         </td>
@@ -659,6 +665,14 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {editingTx && (
+        <EditTransactionPanel
+          transaction={editingTx}
+          onClose={() => setEditingTx(null)}
+          onSave={handleSave}
+        />
+      )}
     </main>
   );
 }
