@@ -80,6 +80,52 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userId = (session.user as { id: string }).id;
+  const db = getDb();
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+
+  if (!id) {
+    return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+  }
+
+  try {
+    const body = await req.json();
+    const { name, budget } = body;
+
+    if (name !== undefined && typeof name !== 'string') {
+      return NextResponse.json({ error: 'name must be a string' }, { status: 400 });
+    }
+
+    if (budget !== undefined && (typeof budget !== 'number' || budget < 0)) {
+      return NextResponse.json({ error: 'budget must be a non-negative number' }, { status: 400 });
+    }
+
+    const updates: { name?: string; budget?: number } = {};
+    if (name !== undefined) updates.name = name.toLowerCase().trim();
+    if (budget !== undefined) updates.budget = budget;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    const categoryRef = db.collection('users').doc(userId).collection('categories').doc(id);
+    await categoryRef.update(updates);
+
+    const updatedDoc = await categoryRef.get();
+    return NextResponse.json({ id: updatedDoc.id, ...updatedDoc.data() });
+  } catch (error) {
+    console.error('PATCH /api/categories error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
