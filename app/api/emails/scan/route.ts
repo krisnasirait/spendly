@@ -53,10 +53,18 @@ export async function POST() {
     
     for (const email of emails) {
       const source = detectSource(email.from, email.subject);
-      if (source === 'unknown') continue;
+      if (source === 'unknown') {
+        if (email.from.toLowerCase().includes('ayo')) {
+          console.log('AYO email not detected:', { from: email.from, subject: email.subject, bodySnippet: email.snippet?.substring(0, 200) });
+        }
+        continue;
+      }
       bySource[source] = (bySource[source] || 0) + 1;
       try {
         const parsed = parseEmail({ subject: email.subject, body: email.snippet, from: email.from });
+        if (!parsed && source === 'ayo') {
+          console.log('AYO parse failed:', { subject: email.subject, body: email.snippet?.substring(0, 500) });
+        }
         if (parsed) {
           transactions.push({
             ...parsed,

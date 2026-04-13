@@ -12,6 +12,7 @@ const SOURCES = [
   { key: 'tokopedia', label: 'Tokopedia', query: 'from:tokopedia' },
   { key: 'traveloka', label: 'Traveloka', query: 'from:traveloka' },
   { key: 'bca',       label: 'BCA',       query: 'from:bca' },
+  { key: 'ayo',       label: 'AYO Indonesia', query: 'from:ayo' },
 ];
 
 const PERIODS = [
@@ -525,11 +526,15 @@ export default function SettingsPage() {
                 <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{label}</p>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{query}</p>
               </div>
-              <Toggle
-                checked={settings.sources.includes(key)}
-                onChange={() => toggleSource(key)}
-                disabled={saving}
-              />
+              {key === 'ayo' ? (
+                <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>Always on</span>
+              ) : (
+                <Toggle
+                  checked={settings.sources.includes(key)}
+                  onChange={() => toggleSource(key)}
+                  disabled={saving}
+                />
+              )}
             </div>
           ))}
         </div>
