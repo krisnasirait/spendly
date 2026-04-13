@@ -7,13 +7,13 @@ interface BCAEmail {
 }
 
 export function parseBCAEmail(email: BCAEmail): Partial<Transaction> | null {
-  const amountMatch = email.body.match(/Total Payment\s*:\s*IDR\s*([\d,\.]+)/);
+  const amountMatch = email.body.match(/(?:Total Bill|Total Payment)\s*:\s*IDR\s*([\d,\.]+)/);
   const dateMatch = email.body.match(/Transaction Date\s*:\s*(\d{2}\s+\w+\s+\d{4})/);
   const typeMatch = email.body.match(/Transaction Type\s*:\s*(.+)/);
 
   if (!amountMatch) return null;
 
-  const amount = parseInt(amountMatch[1].replace(/[,.]/g, ''), 10);
+  const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
   
   let category: Transaction['category'] = 'other';
   const typeLower = typeMatch ? typeMatch[1].toLowerCase() : '';
