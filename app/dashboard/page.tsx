@@ -301,6 +301,22 @@ export default function DashboardPage() {
     ? ((currentCount - previousCount) / previousCount) * 100 
     : null;
 
+  const biggestTx = useMemo(() => {
+    if (filtered.length === 0) return null;
+    return filtered.reduce((max, t) => t.amount > max.amount ? t : max, filtered[0]);
+  }, [filtered]);
+
+  const merchantCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filtered.forEach(t => { counts[t.merchant] = (counts[t.merchant] || 0) + 1; });
+    return counts;
+  }, [filtered]);
+
+  const topMerchant = useMemo(() => {
+    const entries = Object.entries(merchantCounts).sort((a, b) => b[1] - a[1]);
+    return entries[0] ? { name: entries[0][0], count: entries[0][1] } : null;
+  }, [merchantCounts]);
+
   const recent = useMemo(() => [...filtered]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 8), [filtered]);
@@ -387,6 +403,14 @@ export default function DashboardPage() {
           <StatCard
             label="AI Insights"
             value={String(insights.length)}
+          />
+          <StatCard
+            label="Biggest Transaction"
+            value={biggestTx ? fmt(biggestTx.amount) : '—'}
+          />
+          <StatCard
+            label="Top Merchant"
+            value={topMerchant ? `${topMerchant.name} (${topMerchant.count})` : '—'}
           />
         </div>
       )}
