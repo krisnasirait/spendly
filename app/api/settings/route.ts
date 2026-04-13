@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDb } from '@/lib/firestore';
+import { doc, setDoc } from 'firebase-admin/firestore';
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -48,9 +49,13 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'scanPeriodDays must be 7, 30, or 90' }, { status: 400 });
     }
 
+    const updates: Record<string, unknown> = {};
+    if (sources !== undefined) updates.sources = sources;
+    if (scanPeriodDays !== undefined) updates.scanPeriodDays = scanPeriodDays;
+
     const db = getDb();
-    const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
-    await docRef.set({ sources, scanPeriodDays }, { merge: true });
+    const docRef = doc(db, 'users', userId, 'settings', 'preferences');
+    await setDoc(docRef, updates, { merge: true });
 
     return NextResponse.json({ success: true });
   } catch (error) {
