@@ -85,7 +85,7 @@ export async function PATCH(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const body = await req.json();
+  const body = await req.json().catch(() => ({}));
   const { id, merchant, amount, date, categories } = body;
 
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
@@ -93,14 +93,26 @@ export async function PATCH(req: NextRequest) {
   const updates: Record<string, unknown> = {};
   if (merchant !== undefined) updates.merchant = merchant;
   if (amount !== undefined) updates.amount = amount;
-  if (date !== undefined) updates.date = new Date(date);
+  if (date !== undefined) {
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) return NextResponse.json({ error: 'invalid date' }, { status: 400 });
+    updates.date = parsedDate;
+  }
   if (categories !== undefined) {
     if (!Array.isArray(categories)) return NextResponse.json({ error: 'categories must be array' }, { status: 400 });
     updates.categories = categories;
   }
 
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: 'no valid fields to update' }, { status: 400 });
+  }
+
   const db = getDb();
-  await db.collection('users').doc(userId).collection('transactions').doc(id).update(updates);
+  const docRef = db.collection('users').doc(userId).collection('transactions').doc(id);
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) return NextResponse.json({ error: 'transaction not found' }, { status: 404 });
+
+  await docRef.update(updates);
 
   return NextResponse.json({ success: true });
 }
