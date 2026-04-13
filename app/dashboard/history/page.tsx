@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import type { Transaction } from '@/types';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
+import { getCategoryColor } from '@/lib/category-colors';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -12,11 +13,6 @@ const fmt = (n: number) =>
 const categoryLabel: Record<string, string> = {
   food: 'Food & Drinks', shopping: 'Shopping',
   transport: 'Transport', entertainment: 'Entertainment', other: 'Other',
-};
-
-const categoryColors: Record<string, string> = {
-  food: '#7C6CF8', shopping: '#A78BFA', transport: '#60A5FA',
-  entertainment: '#F472B6', other: '#94A3B8',
 };
 
 const sourceBadge: Record<string, { label: string; color: string; bg: string }> = {
@@ -311,8 +307,8 @@ export default function HistoryPage() {
                              <span key={cat} style={{
                               display: 'inline-block', padding: '2px 8px', borderRadius: 999,
                               fontSize: 11, fontWeight: 500,
-                              background: `${categoryColors[cat] || '#94A3B8'}20`,
-                              color: categoryColors[cat] || '#94A3B8',
+                              background: `${getCategoryColor(cat)}20`,
+                              color: getCategoryColor(cat),
                             }}>
                               {categoryLabel[cat] ?? cat}
                             </span>

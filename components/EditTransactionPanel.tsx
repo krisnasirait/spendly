@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Transaction } from '@/types';
+import { getCategoryColor } from '@/lib/category-colors';
 
 interface Category {
   id: string;
@@ -13,11 +14,6 @@ interface EditTransactionPanelProps {
   onClose: () => void;
   onSave: (updated: Transaction) => void;
 }
-
-const categoryColors: Record<string, string> = {
-  food: '#7C6CF8', shopping: '#A78BFA', transport: '#60A5FA',
-  entertainment: '#F472B6', other: '#94A3B8',
-};
 
 export default function EditTransactionPanel({ transaction, onClose, onSave }: EditTransactionPanelProps) {
   const [merchant, setMerchant] = useState(transaction.merchant);
@@ -58,11 +54,21 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name }),
-        }).then(r => r.ok && r.json()).then(newCat => {
-          if (newCat) setAllCategories(prev => [...prev, newCat]);
+        }).then(async r => {
+          if (r.ok) {
+            const newCat = await r.json();
+            if (newCat?.id) {
+              setAllCategories(prev => [...prev, newCat]);
+              setCategories(prev => [...prev, newCat.name]);
+            }
+          }
         }).catch(() => {});
+      } else {
+        const matched = allCategories.find(c => c.name.toLowerCase() === name.toLowerCase());
+        if (matched) {
+          setCategories(prev => [...prev, matched.name]);
+        }
       }
-      setCategories(prev => [...prev, name]);
     }
     setNewCatInput('');
     setSuggestions([]);
@@ -163,20 +169,23 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
 
             {/* Current category chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-              {categories.map(cat => (
-                <span key={cat} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                  padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500,
-                  background: `${categoryColors[cat] || '#94A3B8'}20`,
-                  color: categoryColors[cat] || '#94A3B8',
-                }}>
-                  {cat}
-                  <button onClick={() => removeCategory(cat)} style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'inherit', fontSize: 14, lineHeight: 1, padding: 0,
-                  }}>×</button>
-                </span>
-              ))}
+              {categories.map(cat => {
+                const color = getCategoryColor(cat);
+                return (
+                  <span key={cat} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500,
+                    background: `${color}20`,
+                    color: color,
+                  }}>
+                    {cat}
+                    <button onClick={() => removeCategory(cat)} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'inherit', fontSize: 14, lineHeight: 1, padding: 0,
+                    }}>×</button>
+                  </span>
+                );
+              })}
             </div>
 
             {categoriesLoading && <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading categories…</div>}

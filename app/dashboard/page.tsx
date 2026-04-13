@@ -9,6 +9,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
+import { getCategoryColor } from '@/lib/category-colors';
 
 /* ─── helpers ───────────────────────────────────────────────── */
 const fmt = (n: number) =>
@@ -24,11 +25,6 @@ const fmtShort = (n: number) =>
 const categoryLabel: Record<string, string> = {
   food: 'Food & Drinks', shopping: 'Shopping',
   transport: 'Transport', entertainment: 'Entertainment', other: 'Other',
-};
-
-const categoryColors: Record<string, string> = {
-  food: '#7C6CF8', shopping: '#A78BFA', transport: '#C4B5FD',
-  entertainment: '#DDD6FE', other: '#EDE9FE',
 };
 
 const sourceBadge: Record<string, { label: string; color: string; bg: string }> = {
@@ -498,7 +494,7 @@ export default function DashboardPage() {
                   <Pie data={byCategory} dataKey="total" nameKey="cat" cx="50%" cy="50%"
                     innerRadius={50} outerRadius={72} paddingAngle={3}>
                     {byCategory.map((entry) => (
-                      <Cell key={entry.cat} fill={categoryColors[entry.cat] ?? '#C4B5FD'} />
+                      <Cell key={entry.cat} fill={getCategoryColor(entry.cat)} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v) => fmtShort(Number(v))} />
@@ -509,7 +505,7 @@ export default function DashboardPage() {
                   <li key={cat} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
                     <span style={{
                       width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                      background: categoryColors[cat] ?? '#C4B5FD',
+                      background: getCategoryColor(cat),
                     }} />
                     <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{categoryLabel[cat]}</span>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fmtShort(total)}</span>
@@ -602,17 +598,17 @@ export default function DashboardPage() {
                         </td>
                         <td>
                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                             {tx.categories.map(cat => (
-                               <span key={cat} style={{
-                                display: 'inline-block', padding: '2px 6px', borderRadius: 999,
-                                fontSize: 10, fontWeight: 500,
-                                background: `${categoryColors[cat] || '#94A3B8'}20`,
-                                color: categoryColors[cat] || '#94A3B8',
-                              }}>
-                                {categoryLabel[cat] ?? cat}
-                              </span>
-                            ))}
-                          </div>
+                              {tx.categories.map(cat => (
+                                <span key={cat} style={{
+                                 display: 'inline-block', padding: '2px 6px', borderRadius: 999,
+                                 fontSize: 10, fontWeight: 500,
+                                 background: `${getCategoryColor(cat)}20`,
+                                 color: getCategoryColor(cat),
+                               }}>
+                                 {categoryLabel[cat] ?? cat}
+                               </span>
+                             ))}
+                           </div>
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>
                           -{fmt(tx.amount)}
