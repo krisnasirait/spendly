@@ -34,9 +34,12 @@ export async function fetchTransactionEmails(auth: Auth.OAuth2Client) {
       const headers = data.data.payload?.headers || [];
       const subject = headers.find((h) => h.name === 'Subject')?.value || '';
       const from = headers.find((h) => h.name === 'From')?.value || '';
+      const dateStr = headers.find((h) => h.name === 'Date')?.value || '';
       const body = data.data.snippet || '';
       
-      return { subject, from, body };
+      const date = new Date(dateStr);
+      
+      return { id: msg.id!, subject, from, date, snippet: body };
     })
   );
 
