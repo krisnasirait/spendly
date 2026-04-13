@@ -406,7 +406,7 @@ export default function DashboardPage() {
           />
           <StatCard
             label="Biggest Transaction"
-            value={biggestTx ? fmt(biggestTx.amount) : '—'}
+            value={biggestTx ? `${biggestTx.merchant}: ${fmt(biggestTx.amount)}` : '—'}
           />
           <StatCard
             label="Top Merchant"
