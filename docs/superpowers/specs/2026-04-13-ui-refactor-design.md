@@ -1,11 +1,11 @@
-# Spendly UI Refactor — Minimal Light Design
+# Spendly UI Refactor — Minimal Light with HeroUI v3
 
 **Date:** 2026-04-13
 **Status:** Approved
 
 ## Concept & Vision
 
-A clean, minimal expense tracker that feels light and effortless. The UI disappears — no gradients, no glassmorphism, no decorative orbs — leaving only the data. Think of a premium notes app or a well-designed banking dashboard. The personality is calm, focused, and trustworthy.
+A clean, minimal expense tracker that feels light and effortless. Using HeroUI v3 as the component foundation with custom indigo accent theming. HeroUI handles all component needs — Card, Badge, Avatar, Progress, etc. — with minimal custom styling needed. The personality is calm, focused, and trustworthy.
 
 ---
 

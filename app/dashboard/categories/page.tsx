@@ -20,6 +20,8 @@ export default function CategoriesPage() {
   const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [txError, setTxError] = useState(false);
+  const [catError, setCatError] = useState(false);
   const categoryData = useMemo(() => {
     const emojis = ['🍜', '🛍️', '🚗', '🎬', '📦', '💄', '🏠', '💊', '✏️', '🎁'];
     const colors = ['#7C6CF8', '#A78BFA', '#60A5FA', '#F472B6', '#94A3B8', '#FB7185', '#FBBF24', '#34D399', '#60A5FA', '#A78BFA'];
@@ -49,21 +51,21 @@ export default function CategoriesPage() {
   useEffect(() => {
     if (session?.user) {
       Promise.all([
-        fetch('/api/transactions').then(r => r.json()),
-        fetch('/api/categories').then(r => r.json()),
-      ]).then(([txData, catData]) => {
-        setTransactions(txData.transactions || []);
-        setCategories(catData.categories || []);
-        setLoading(false);
-      });
+        fetch('/api/transactions')
+          .then(r => { if (!r.ok) throw new Error('transactions'); return r.json(); })
+          .then(d => { setTransactions(d.transactions || []); })
+          .catch(() => setTxError(true)),
+        fetch('/api/categories')
+          .then(r => { if (!r.ok) throw new Error('categories'); return r.json(); })
+          .then(d => { setCategories(d.categories || []); })
+          .catch(() => setCatError(true)),
+      ]).catch(() => {}).finally(() => setLoading(false));
     }
   }, [session]);
 
   const byCategory = useMemo(() => {
-    const map: Record<Category, { total: number; count: number }> = {
-      food: { total: 0, count: 0 }, shopping: { total: 0, count: 0 },
-      transport: { total: 0, count: 0 }, entertainment: { total: 0, count: 0 }, other: { total: 0, count: 0 },
-    };
+    const map: Record<string, { total: number; count: number }> = {};
+    categoryData.forEach(c => { map[c.key] = { total: 0, count: 0 }; });
     transactions.forEach((t) => {
       if (map[t.category]) {
         map[t.category].total += t.amount;
@@ -71,7 +73,7 @@ export default function CategoriesPage() {
       }
     });
     return map;
-  }, [transactions]);
+  }, [transactions, categoryData]);
 
   const totalAll = Object.values(byCategory).reduce((s, v) => s + v.total, 0);
 

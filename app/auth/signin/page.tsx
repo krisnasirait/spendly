@@ -9,114 +9,71 @@ export default function SignIn() {
   }, []);
 
   return (
-    <main
-      className="min-h-screen flex items-center justify-center relative overflow-hidden"
-      style={{ background: 'var(--bg-base)' }}
-    >
-      {/* Ambient orbs */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          width: 500,
-          height: 500,
-          top: -100,
-          left: -150,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 65%)',
-          filter: 'blur(60px)',
-        }}
-      />
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          width: 400,
-          height: 400,
-          bottom: -80,
-          right: -100,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 65%)',
-          filter: 'blur(60px)',
-        }}
-      />
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          width: 300,
-          height: 300,
-          top: '40%',
-          right: '10%',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(56,189,248,0.1) 0%, transparent 65%)',
-          filter: 'blur(80px)',
-        }}
-      />
-
-      {/* Card */}
-      <div
-        className="relative z-10 flex flex-col items-center gap-6 px-8 py-10 rounded-3xl w-[320px] animate-scale-in"
-        style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(139,92,246,0.3)',
-          backdropFilter: 'blur(24px)',
-          boxShadow: '0 24px 80px rgba(124,58,237,0.2)',
-        }}
-      >
-        {/* Logo mark */}
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl animate-float"
-          style={{
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.35), rgba(236,72,153,0.25))',
-            border: '1px solid rgba(139,92,246,0.4)',
-            boxShadow: '0 8px 32px rgba(124,58,237,0.3)',
-          }}
-        >
-          💸
+    <main style={{
+      minHeight: '100vh',
+      background: 'var(--bg-page)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    }}>
+      <div style={{
+        background: 'var(--bg-surface)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '48px 40px',
+        width: '100%',
+        maxWidth: 380,
+        boxShadow: 'var(--shadow-hover)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 0,
+      }}>
+        {/* Logo */}
+        <div style={{
+          width: 56, height: 56, borderRadius: 16,
+          background: 'var(--accent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 16,
+        }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+            <path d="M12 6v6l4 2" />
+          </svg>
         </div>
 
-        {/* Wordmark */}
-        <div className="text-center">
-          <h1
-            className="text-3xl font-extrabold tracking-tight"
-            style={{
-              background: 'linear-gradient(135deg, #a78bfa, #f472b6)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            Spendly
-          </h1>
-          <p className="text-xs mt-1 font-medium" style={{ color: 'rgba(148,163,184,0.6)' }}>
-            Know where your money goes
-          </p>
-        </div>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: 6 }}>
+          Spendly
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 36, textAlign: 'center' }}>
+          Know where your money goes
+        </p>
 
         {/* Spinner */}
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-full border-2 border-t-transparent"
-            style={{
-              borderColor: 'rgba(139,92,246,0.3)',
-              borderTopColor: '#a78bfa',
-              animation: 'spin 0.8s linear infinite',
-            }}
-          />
-          <p className="text-xs font-medium" style={{ color: 'rgba(148,163,184,0.6)' }}>
-            Redirecting to Google…
-          </p>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            border: '3px solid var(--accent-light)',
+            borderTopColor: 'var(--accent)',
+            animation: 'spin 0.8s linear infinite',
+          }} />
         </div>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 36 }}>
+          Redirecting to Google…
+        </p>
 
-        {/* Divider */}
-        <div
-          className="w-full h-px"
-          style={{ background: 'rgba(255,255,255,0.06)' }}
-        />
+        <div style={{ width: '100%', height: 1, background: 'var(--border)', marginBottom: 20 }} />
 
-        {/* Footer note */}
-        <p className="text-[10px] text-center leading-relaxed" style={{ color: 'rgba(148,163,184,0.4)' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.7, maxWidth: 280 }}>
           Spendly reads your purchase emails to track spending — nothing is stored without your permission.
         </p>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </main>
   );
 }

@@ -1,20 +1,22 @@
-import { BottomNav } from '@/components/ui/BottomNav';
-import { Sidebar } from '@/components/ui/Sidebar';
-import { SessionWrapper } from '@/components/providers/SessionWrapper';
+import { Sidebar } from '@/components/dashboard/Sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SessionWrapper>
-      <div
-        className="min-h-screen md:pl-64 flex flex-col"
-        style={{ background: 'var(--bg-base)' }}
-      >
-        <Sidebar />
-        <div className="flex-1 w-full">
-          {children}
-        </div>
-        <BottomNav />
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      background: 'var(--bg-page)',
+    }}>
+      <Sidebar />
+      <div style={{
+        flex: 1,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflowX: 'hidden',
+      }}>
+        {children}
       </div>
-    </SessionWrapper>
+    </div>
   );
 }
