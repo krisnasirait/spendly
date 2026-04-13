@@ -317,6 +317,16 @@ export default function DashboardPage() {
     return entries[0] ? { name: entries[0][0], count: entries[0][1] } : null;
   }, [merchantCounts]);
 
+  const bySource = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(t => {
+      map[t.source] = (map[t.source] || 0) + t.amount;
+    });
+    return Object.entries(map)
+      .map(([source, total]) => ({ source, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [filtered]);
+
   const recent = useMemo(() => [...filtered]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 8), [filtered]);
@@ -504,6 +514,34 @@ export default function DashboardPage() {
             </>
           )}
         </div>
+
+        {bySource.length > 0 && (
+          <div className="card fade-up" style={{ padding: '20px 24px' }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16 }}>
+              By Source
+            </h3>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {bySource.map(({ source, total }) => {
+                const badge = sourceBadge[source] ?? { label: source, color: '#6B7280', bg: '#F3F4F6' };
+                const pct = currentTotal > 0 ? (total / currentTotal) * 100 : 0;
+                return (
+                  <li key={source} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{
+                      display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                      fontSize: 10, fontWeight: 600, background: badge.bg, color: badge.color,
+                    }}>{badge.label}</span>
+                    <div style={{ flex: 1, height: 6, background: 'var(--border)', borderRadius: 999 }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: badge.color, borderRadius: 999 }} />
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 500, minWidth: 60, textAlign: 'right' }}>
+                      {fmtShort(total)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* ── Bottom row: Transactions + Insights ── */}
