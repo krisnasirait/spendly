@@ -4,6 +4,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import type { Transaction, Category } from '@/types';
+import { getBillingPeriod, isInBillingPeriod } from '@/lib/billing-period';
+
+type Period = 'today' | 'week' | 'month' | 'all';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -43,6 +46,8 @@ export default function CategoriesPage() {
   }, [categories]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  const [period, setPeriod] = useState<Period>('month');
+  const [billingStartDay, setBillingStartDay] = useState(1);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -59,6 +64,10 @@ export default function CategoriesPage() {
           .then(r => { if (!r.ok) throw new Error('categories'); return r.json(); })
           .then(d => { setCategories(d.categories || []); })
           .catch(() => setCatError(true)),
+        fetch('/api/settings')
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d?.billingStartDay) setBillingStartDay(d.billingStartDay); })
+          .catch(() => {}),
       ]).catch(() => {}).finally(() => setLoading(false));
     }
   }, [session]);
@@ -80,10 +89,39 @@ export default function CategoriesPage() {
     return () => window.removeEventListener('focus', onFocus);
   }, [session, loading]);
 
+  const filteredTransactions = useMemo(() => {
+    if (period === 'all') return transactions;
+    const now = new Date();
+    const { start, end } = getBillingPeriod(now, billingStartDay);
+    return transactions.filter(t => {
+      const txDate = new Date(t.date);
+      switch (period) {
+        case 'today': {
+          const periodStart = getBillingPeriod(now, billingStartDay).start;
+          return txDate >= periodStart && txDate <= now;
+        }
+        case 'week': {
+          const periodStart = getBillingPeriod(now, billingStartDay).start;
+          const weekStart = new Date(periodStart);
+          const dayOfWeek = weekStart.getUTCDay();
+          const monStart = new Date(weekStart);
+          monStart.setUTCDate(monStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+          const weekEnd = new Date(monStart);
+          weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+          return txDate >= monStart && txDate < weekEnd;
+        }
+        case 'month':
+          return isInBillingPeriod(txDate, start, end);
+        default:
+          return true;
+      }
+    });
+  }, [transactions, period, billingStartDay]);
+
   const byCategory = useMemo(() => {
     const map: Record<string, { total: number; count: number }> = {};
     categoryData.forEach(c => { map[c.key] = { total: 0, count: 0 }; });
-    transactions.forEach((t) => {
+    filteredTransactions.forEach((t) => {
       t.categories.forEach(cat => {
         if (map[cat]) {
           map[cat].total += t.amount;
@@ -92,15 +130,15 @@ export default function CategoriesPage() {
       });
     });
     return map;
-  }, [transactions, categoryData]);
+  }, [filteredTransactions, categoryData]);
 
   const totalAll = Object.values(byCategory).reduce((s, v) => s + v.total, 0);
 
   const selectedTxs = useMemo(() =>
-    selected ? transactions.filter(t => t.categories.includes(selected))
+    selected ? filteredTransactions.filter(t => t.categories.includes(selected))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [],
-    [selected, transactions]
+    [selected, filteredTransactions]
   );
 
   if (status === 'loading' || loading) {
@@ -118,11 +156,29 @@ export default function CategoriesPage() {
     <main style={{ padding: '32px 32px 48px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Header */}
-      <div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>Spending by Category</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-          Click a category to drill down into its transactions.
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>Spending by Category</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+            Click a category to drill down into its transactions.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-page)', borderRadius: 'var(--radius-pill)', padding: 4 }}>
+          {(['today', 'week', 'month', 'all'] as Period[]).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              style={{
+                padding: '6px 14px', borderRadius: 'var(--radius-pill)', border: 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                background: period === p ? 'var(--accent)' : 'transparent',
+                color: period === p ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              {p === 'today' ? 'Today' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {txError && (
