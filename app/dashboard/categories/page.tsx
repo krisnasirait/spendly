@@ -42,7 +42,7 @@ export default function CategoriesPage() {
     }));
   }, [categories]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<Category | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -105,6 +105,17 @@ export default function CategoriesPage() {
           Click a category to drill down into its transactions.
         </p>
       </div>
+
+      {txError && (
+        <div className="card" style={{ padding: 16, background: 'var(--danger-bg)', color: 'var(--danger)', fontSize: 13 }}>
+          Failed to load transactions. Please try again.
+        </div>
+      )}
+      {catError && (
+        <div className="card" style={{ padding: 16, background: 'var(--danger-bg)', color: 'var(--danger)', fontSize: 13 }}>
+          Failed to load categories. Please try again.
+        </div>
+      )}
 
       {/* Category grid */}
       <div style={{
