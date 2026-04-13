@@ -3,37 +3,58 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDb } from '@/lib/firestore';
 
-export async function GET() {
+async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  if (!session?.user?.email) return null;
+  return session.user.email as string;
+}
+
+export async function GET() {
+  const userId = await getUserId();
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
-  const db = getDb();
-  const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
-  const snap = await docRef.get();
+  try {
+    const db = getDb();
+    const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
+    const snap = await docRef.get();
 
-  if (!snap.exists) {
-    return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca'], scanPeriodDays: 30 });
+    if (!snap.exists) {
+      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca'], scanPeriodDays: 30 });
+    }
+
+    return NextResponse.json(snap.data());
+  } catch (error) {
+    console.error('GET /api/settings error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  return NextResponse.json(snap.data());
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const userId = await getUserId();
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
-  const body = await req.json();
-  const { sources, scanPeriodDays } = body;
+  try {
+    const body = await req.json();
+    const { sources, scanPeriodDays } = body;
 
-  const db = getDb();
-  const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
-  await docRef.set({ sources, scanPeriodDays }, { merge: true });
+    if (sources !== undefined && !Array.isArray(sources)) {
+      return NextResponse.json({ error: 'sources must be an array' }, { status: 400 });
+    }
+    if (scanPeriodDays !== undefined && (typeof scanPeriodDays !== 'number' || ![7, 30, 90].includes(scanPeriodDays))) {
+      return NextResponse.json({ error: 'scanPeriodDays must be 7, 30, or 90' }, { status: 400 });
+    }
 
-  return NextResponse.json({ success: true });
+    const db = getDb();
+    const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
+    await docRef.set({ sources, scanPeriodDays }, { merge: true });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('PUT /api/settings error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
