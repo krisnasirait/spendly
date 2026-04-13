@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
 import { getCategoryColor } from '@/lib/category-colors';
+import { getBillingPeriod, isInBillingPeriod, getPreviousBillingPeriod } from '@/lib/billing-period';
 
 /* ─── helpers ───────────────────────────────────────────────── */
 const fmt = (n: number) =>
@@ -160,6 +161,7 @@ export default function DashboardPage() {
   type Period = 'today' | 'week' | 'month' | 'all';
   const [period, setPeriod] = useState<Period>('month');
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [billingStartDay, setBillingStartDay] = useState(1);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -180,6 +182,17 @@ export default function DashboardPage() {
     if (session?.user) loadData();
   }, [session, loadData]);
 
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/settings')
+        .then(r => r.json())
+        .then(data => {
+          if (data.billingStartDay) setBillingStartDay(data.billingStartDay);
+        })
+        .catch(() => {});
+    }
+  }, [session]);
+
   async function handleScan() {
     setScanning(true);
     await fetch('/api/emails/scan', { method: 'POST' });
@@ -194,32 +207,35 @@ export default function DashboardPage() {
   /* ── derived stats ── */
   const filtered = useMemo(() => {
     const now = new Date();
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
 
     return transactions.filter(t => {
       const txDate = new Date(t.date);
-      txDate.setUTCHours(0, 0, 0, 0);
 
       switch (period) {
-        case 'today':
-          return txDate >= today;
+        case 'today': {
+          const { start: periodStart } = getBillingPeriod(now, billingStartDay);
+          return txDate >= periodStart && txDate <= now;
+        }
         case 'week': {
-          const dayOfWeek = now.getUTCDay();
-          const thisWeekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-          thisWeekStart.setUTCDate(thisWeekStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-          return txDate >= thisWeekStart;
+          const { start: periodStart } = getBillingPeriod(now, billingStartDay);
+          const weekStart = new Date(periodStart);
+          const dayOfWeek = weekStart.getUTCDay();
+          const monStart = new Date(weekStart);
+          monStart.setUTCDate(monStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+          const weekEnd = new Date(monStart);
+          weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+          return txDate >= monStart && txDate < weekEnd;
         }
         case 'month': {
-          const firstOfMonthUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-          return txDate >= firstOfMonthUtc;
+          const { start: periodStart, end: periodEnd } = getBillingPeriod(now, billingStartDay);
+          return txDate >= periodStart && txDate < periodEnd;
         }
         case 'all':
         default:
           return true;
       }
     });
-  }, [transactions, period]);
+  }, [transactions, period, billingStartDay]);
 
   const totalSpend = useMemo(() => filtered.reduce((s, t) => s + t.amount, 0), [filtered]);
 
@@ -242,53 +258,22 @@ export default function DashboardPage() {
   }, [filtered]);
 
   const previousPeriodData = useMemo(() => {
-    const now = new Date();
-
-    let start: Date, end: Date;
-
-    switch (period) {
-      case 'today': {
-        const todayUtc = new Date();
-        todayUtc.setUTCHours(0, 0, 0, 0);
-        const yesterdayUtc = new Date(todayUtc);
-        yesterdayUtc.setUTCDate(yesterdayUtc.getUTCDate() - 1);
-        start = yesterdayUtc;
-        end = todayUtc;
-        break;
-      }
-      case 'week': {
-        const dayOfWeek = now.getUTCDay();
-        const thisWeekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        thisWeekStart.setUTCDate(thisWeekStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        const lastWeekStart = new Date(thisWeekStart);
-        lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
-        start = lastWeekStart;
-        end = thisWeekStart;
-        break;
-      }
-      case 'month': {
-        const lastMonthStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-        const lastMonthEndUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-        start = lastMonthStartUtc;
-        end = lastMonthEndUtc;
-        break;
-      }
-      case 'all':
-      default:
-        return { total: 0, count: 0 };
+    if (period === 'all') {
+      return { total: 0, count: 0 };
     }
-
+    const now = new Date();
+    const { start, end } = getBillingPeriod(now, billingStartDay);
+    const prev = getPreviousBillingPeriod({ start, end });
+    
     const periodTxs = transactions.filter(t => {
       const txDate = new Date(t.date);
-      txDate.setUTCHours(0, 0, 0, 0);
-      return txDate >= start && txDate < end;
+      return isInBillingPeriod(txDate, prev.start, prev.end);
     });
-
+    
     const total = periodTxs.reduce((s, t) => s + t.amount, 0);
     const count = periodTxs.length;
-
     return { total, count };
-  }, [transactions, period]);
+  }, [transactions, period, billingStartDay]);
 
   const currentTotal = totalSpend;
   const previousTotal = previousPeriodData.total;
