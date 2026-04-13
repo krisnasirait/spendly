@@ -3,7 +3,6 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { Toggle } from '@/components/ui/Toggle';
 import { Toast, ToastType } from '@/components/ui/Toast';
 import { SettingsSection } from '@/components/dashboard/SettingsSection';
 
@@ -451,13 +450,6 @@ export default function SettingsPage() {
     }
   }
 
-  function toggleSource(key: string) {
-    const newSources = settings.sources.includes(key)
-      ? settings.sources.filter((s) => s !== key)
-      : [...settings.sources, key];
-    saveSettings({ ...settings, sources: newSources });
-  }
-
   async function handleScan() {
     setScanning(true);
     setShowResults(false);
@@ -526,15 +518,6 @@ export default function SettingsPage() {
                 <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{label}</p>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{query}</p>
               </div>
-              {key === 'ayo' ? (
-                <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>Always on</span>
-              ) : (
-                <Toggle
-                  checked={settings.sources.includes(key)}
-                  onChange={() => toggleSource(key)}
-                  disabled={saving}
-                />
-              )}
             </div>
           ))}
         </div>
