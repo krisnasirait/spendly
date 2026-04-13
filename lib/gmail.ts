@@ -42,20 +42,40 @@ export async function fetchTransactionEmails(auth: Auth.OAuth2Client) {
         }
         if (payload.parts) {
           for (const part of payload.parts as { body?: { data?: string }; parts?: unknown[]; mimeType?: string }[]) {
-            if (part.mimeType === 'text/plain' || part.mimeType === 'text/html') {
+            if (part.mimeType === 'text/plain') {
               const decoded = decodeBody(part);
               if (decoded) return decoded;
             }
           }
-          for (const part of payload.parts as { body?: { data?: string }; parts?: unknown[] }[]) {
-            const decoded = decodeBody(part);
-            if (decoded) return decoded;
+          for (const part of payload.parts as { body?: { data?: string }; parts?: unknown[]; mimeType?: string }[]) {
+            if (part.mimeType === 'text/html') {
+              const decoded = decodeBody(part);
+              if (decoded) return decoded;
+            }
           }
         }
         return '';
       }
 
-      const body = decodeBody(data.data.payload!) || data.data.snippet || '';
+      function htmlToText(html: string): string {
+        return html
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<\/div>/gi, '\n')
+          .replace(/<\/tr>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+      }
+
+      const rawBody = decodeBody(data.data.payload!) || data.data.snippet || '';
+      const body = htmlToText(rawBody);
       const date = new Date(dateStr);
 
       return { id: msg.id!, subject, from, date, snippet: body };
