@@ -38,27 +38,34 @@ export async function POST() {
     for (const email of emails) {
       const source = detectSource(email.from);
       bySource[source] = (bySource[source] || 0) + 1;
-      const parsed = parseEmail({ subject: email.subject, body: email.snippet, from: email.from });
-      if (parsed) {
-        transactions.push({
-          ...parsed,
-          source,
-          userId,
-          createdAt: new Date(),
-        });
+      try {
+        const parsed = parseEmail({ subject: email.subject, body: email.snippet, from: email.from });
+        if (parsed) {
+          transactions.push({
+            ...parsed,
+            source,
+            userId,
+            createdAt: new Date(),
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to parse email:', email.subject, e);
       }
     }
 
     const db = getDb();
-    const batch = db.batch();
     const txRef = db.collection('users').doc(userId).collection('transactions');
     
-    transactions.forEach((tx) => {
-      const docRef = txRef.doc();
-      batch.set(docRef, tx);
-    });
-    
-    await batch.commit();
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
+      const chunk = transactions.slice(i, i + BATCH_SIZE);
+      const batch = db.batch();
+      chunk.forEach((tx) => {
+        const docRef = txRef.doc();
+        batch.set(docRef, tx);
+      });
+      await batch.commit();
+    }
 
     await db.collection('users').doc(userId).set({
       lastScanAt: new Date(),
