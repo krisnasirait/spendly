@@ -45,6 +45,9 @@ export async function PUT(req: NextRequest) {
     if (sources !== undefined && !Array.isArray(sources)) {
       return NextResponse.json({ error: 'sources must be an array' }, { status: 400 });
     }
+    if (sources !== undefined && sources.length === 0) {
+      return NextResponse.json({ error: 'At least one source must be selected' }, { status: 400 });
+    }
     if (scanPeriodDays !== undefined && (typeof scanPeriodDays !== 'number' || ![7, 30, 90].includes(scanPeriodDays))) {
       return NextResponse.json({ error: 'scanPeriodDays must be 7, 30, or 90' }, { status: 400 });
     }
