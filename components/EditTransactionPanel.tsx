@@ -28,12 +28,22 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
   const [newCatInput, setNewCatInput] = useState('');
   const [suggestions, setSuggestions] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
 
   useEffect(() => {
+    setCategoriesLoading(true);
+    setCategoriesError(null);
     fetch('/api/categories')
-      .then(r => r.json())
-      .then(data => setAllCategories(data.categories || []));
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to load categories');
+        return r.json();
+      })
+      .then(data => setAllCategories(data.categories || []))
+      .catch(err => setCategoriesError(err.message))
+      .finally(() => setCategoriesLoading(false));
   }, []);
 
   function removeCategory(name: string) {
@@ -66,6 +76,7 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
 
   async function handleSave() {
     setSaving(true);
+    setSaveError(null);
     try {
       const res = await fetch('/api/transactions', {
         method: 'PATCH',
@@ -75,7 +86,12 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
       if (res.ok) {
         onSave({ ...transaction, merchant, amount, date: new Date(date), categories });
         onClose();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || 'Failed to save transaction');
       }
+    } catch {
+      setSaveError('Network error. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -153,23 +169,26 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
               ))}
             </div>
 
-            {/* Add category input */}
-            <input
-              value={newCatInput}
-              onChange={e => handleInputChange(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && showCreate) {
-                  e.preventDefault();
-                  addCategory(newCatInput.trim());
-                }
-              }}
-              placeholder="Type to add category…"
-              style={{
-                width: '100%', padding: '10px 14px', borderRadius: 10,
-                border: '1.5px solid var(--border)', background: 'var(--bg-page)',
-                fontSize: 14, color: 'var(--text-primary)', outline: 'none',
-              }}
-            />
+            {categoriesLoading && <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading categories…</div>}
+            {categoriesError && <div style={{ fontSize: 13, color: '#EF4444' }}>{categoriesError}</div>}
+            {!categoriesLoading && !categoriesError && (
+              <input
+                value={newCatInput}
+                onChange={e => handleInputChange(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && showCreate) {
+                    e.preventDefault();
+                    addCategory(newCatInput.trim());
+                  }
+                }}
+                placeholder="Type to add category…"
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: 10,
+                  border: '1.5px solid var(--border)', background: 'var(--bg-page)',
+                  fontSize: 14, color: 'var(--text-primary)', outline: 'none',
+                }}
+              />
+            )}
 
             {/* Suggestions */}
             {suggestions.length > 0 && (
@@ -204,11 +223,18 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}>
-          <button onClick={onClose} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>
-            {saving ? 'Saving…' : 'Save'}
-          </button>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {saveError && (
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#FEE2E2', color: '#991B1B', fontSize: 13 }}>
+              {saveError}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={onClose} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
     </>
