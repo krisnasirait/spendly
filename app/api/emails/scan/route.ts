@@ -52,6 +52,7 @@ export async function POST() {
     if (parsed) {
       transactions.push({
         ...parsed,
+        source: email.source,
         userId,
         createdAt: new Date(),
       });
