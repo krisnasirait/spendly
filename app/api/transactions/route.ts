@@ -51,6 +51,45 @@ export async function GET(_req: NextRequest) {
   return NextResponse.json({ transactions });
 }
 
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userId = (session.user as { id: string }).id;
+  const body = await req.json().catch(() => ({}));
+  const { merchant, amount, date, categories, source } = body;
+
+  if (!merchant || typeof merchant !== 'string' || merchant.trim() === '') {
+    return NextResponse.json({ error: 'merchant is required' }, { status: 400 });
+  }
+  if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+    return NextResponse.json({ error: 'amount must be a positive number' }, { status: 400 });
+  }
+  if (!date) {
+    return NextResponse.json({ error: 'date is required' }, { status: 400 });
+  }
+  if (!categories || !Array.isArray(categories)) {
+    return NextResponse.json({ error: 'categories must be an array' }, { status: 400 });
+  }
+
+  const db = getDb();
+  const txRef = db.collection('users').doc(userId).collection('transactions').doc();
+  
+  await txRef.set({
+    merchant: merchant.trim(),
+    amount,
+    date: new Date(date),
+    categories,
+    source: source || 'manual',
+    userId,
+    createdAt: new Date(),
+  });
+
+  return NextResponse.json({ id: txRef.id, success: true }, { status: 201 });
+}
+
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
