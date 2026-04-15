@@ -24,6 +24,7 @@ interface Settings {
   sources: string[];
   scanPeriodDays: number;
   billingStartDay: number;
+  manualVerificationEnabled: boolean;
 }
 
 interface ScanResults {
@@ -395,7 +396,7 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1 });
+  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1, manualVerificationEnabled: false });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -566,6 +567,50 @@ export default function SettingsPage() {
               fontSize: 14, color: 'var(--text-primary)', outline: 'none',
             }}
           />
+        </div>
+        <div style={{
+          marginTop: 20,
+          padding: '16px',
+          borderRadius: 12,
+          background: 'var(--bg-page)',
+          border: '1px solid var(--border)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+                Enable Manual Verification
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                When enabled, scanned transactions go to pending page for review before adding to history.
+              </p>
+            </div>
+            <button
+              onClick={() => saveSettings({ ...settings, manualVerificationEnabled: !settings.manualVerificationEnabled })}
+              style={{
+                width: 48,
+                height: 26,
+                borderRadius: 13,
+                background: settings.manualVerificationEnabled ? 'var(--accent)' : 'var(--border)',
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'background 0.2s',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: '#fff',
+                position: 'absolute',
+                top: 2,
+                left: settings.manualVerificationEnabled ? 24 : 2,
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }} />
+            </button>
+          </div>
         </div>
       </SettingsSection>
 
