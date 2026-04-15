@@ -66,6 +66,9 @@ export async function PUT(req: NextRequest) {
     if (manualVerificationEnabled !== undefined) updates.manualVerificationEnabled = manualVerificationEnabled;
 
     const db = getDb();
+    const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
+    await docRef.set(updates, { merge: true });
+
     if (manualVerificationEnabled === false) {
       const pendingSnap = await db.collection('users').doc(userId).collection('pendingTransactions').get();
       if (!pendingSnap.empty) {
@@ -93,9 +96,6 @@ export async function PUT(req: NextRequest) {
         console.log(`Auto-approved ${approvedCount} pending transactions`);
       }
     }
-
-    const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
-    await docRef.set(updates, { merge: true });
 
     return NextResponse.json({ success: true });
   } catch (error) {
