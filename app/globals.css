@@ -211,3 +211,24 @@ body {
   background: var(--accent-light);
   color: var(--text-primary);
 }
+
+/* ─── Responsive Utilities ─── */
+@media (max-width: 639px) {
+  .hide-mobile { display: none !important; }
+  
+  .stat-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .hide-desktop { display: none !important; }
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop-only { display: none !important; }
+}
