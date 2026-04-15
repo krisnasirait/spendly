@@ -5,8 +5,8 @@ import { getDb } from '@/lib/firestore';
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return null;
-  return session.user.email as string;
+  if (!session?.user) return null;
+  return (session.user as { id: string }).id;
 }
 
 export async function GET() {
