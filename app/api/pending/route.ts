@@ -5,8 +5,8 @@ import { getDb } from '@/lib/firestore';
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return null;
-  return session.user.email as string;
+  if (!session?.user) return null;
+  return (session.user as { id: string }).id;
 }
 
 export async function GET() {
@@ -24,10 +24,20 @@ export async function GET() {
       .orderBy('createdAt', 'desc')
       .get();
 
-    const pendingTransactions = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const pendingTransactions = snap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        merchant: data.merchant,
+        amount: data.amount,
+        date: data.date instanceof Date ? data.date.toISOString() : (typeof data.date === 'string' ? data.date : String(data.date)),
+        categories: data.categories || [],
+        source: data.source,
+        messageId: data.messageId,
+        createdAt: typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt instanceof Date ? data.createdAt.toISOString() : String(data.createdAt)),
+        status: 'pending' as const,
+      };
+    });
 
     return NextResponse.json({ pendingTransactions });
   } catch (error) {
@@ -43,7 +53,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { action, id } = body;
 
     if (!action || !['approve', 'reject'].includes(action)) {
