@@ -78,12 +78,19 @@ export function EditBudgetsModal({ budgets, transactions, onClose, onSave }: Edi
     onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        background: 'var(--bg-surface)', borderRadius: 16, width: '100%', maxWidth: 480,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        background: 'var(--bg-surface)', 
+        borderRadius: 24,
+        width: '100%', 
+        maxWidth: 480,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+        overflow: 'hidden',
       }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700 }}>Edit Budgets</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+        <div style={{ 
+          padding: '20px 24px', 
+          background: 'linear-gradient(135deg, var(--accent-start) 0%, var(--accent-end) 100%)',
+        }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Edit Budgets</h2>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
             Set monthly spending limits for each category
           </p>
         </div>
@@ -126,7 +133,25 @@ export function EditBudgetsModal({ budgets, transactions, onClose, onSave }: Edi
           <button onClick={onClose} className="btn btn-ghost" style={{ fontSize: 13 }}>
             Cancel
           </button>
-          <button onClick={handleSave} className="btn btn-primary" style={{ fontSize: 13 }}>
+          <button onClick={handleSave} style={{
+            background: 'linear-gradient(135deg, var(--accent-start) 0%, var(--accent-end) 100%)',
+            color: '#fff',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(124, 108, 248, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}>
             Save Budgets
           </button>
         </div>
