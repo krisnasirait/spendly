@@ -33,7 +33,7 @@ export interface Category {
 export interface Insight {
   id: string;
   userId: string;
-  type: 'spike' | 'trend' | 'category_overload' | 'pattern' | 'encouragement';
+  type: 'spike' | 'trend' | 'category_overload' | 'pattern' | 'encouragement' | 'budget_alert' | 'unusual_tx';
   text: string;
   severity: 'high' | 'medium' | 'low';
   createdAt: Date;
@@ -46,4 +46,12 @@ export interface User {
   name: string;
   createdAt: Date;
   lastScanAt: Date | null;
+}
+
+export interface Budget {
+  category: string;
+  amount: number;
+  period: 'monthly';
+  suggestedAmount?: number;
+  isManual: boolean;
 }

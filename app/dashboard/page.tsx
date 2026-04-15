@@ -95,7 +95,7 @@ function InsightCard({ insight }: { insight: Insight }) {
 
   const typeEmoji = {
     spike: '📈', trend: '📊', category_overload: '⚠️',
-    pattern: '🔁', encouragement: '🎉',
+    pattern: '🔁', encouragement: '🎉', budget_alert: '💰', unusual_tx: '🔍',
   }[insight.type];
 
   return (
