@@ -45,6 +45,10 @@ export async function POST() {
   }
 
   try {
+    const db = getDb();
+    const settingsSnap = await db.collection('users').doc(userId).collection('settings').doc('preferences').get();
+    const manualVerificationEnabled = settingsSnap.data()?.manualVerificationEnabled ?? false;
+
     const auth = createGmailClient(accessToken);
     const emails = await fetchTransactionEmails(auth);
 
@@ -78,8 +82,6 @@ export async function POST() {
         console.warn('Failed to parse email:', email.subject, e);
       }
     }
-
-    const db = getDb();
 
     const existingSnap = await db
       .collection('users')
@@ -117,19 +119,33 @@ export async function POST() {
       await batch.commit();
     }
 
-const txRef = db.collection('users').doc(userId).collection('transactions');
-    
-    const BATCH_SIZE = 500;
+const BATCH_SIZE = 500;
     const txIds: string[] = [];
-    for (let i = 0; i < newTransactions.length; i += BATCH_SIZE) {
-      const chunk = newTransactions.slice(i, i + BATCH_SIZE);
-      const batch = db.batch();
-      chunk.forEach((tx) => {
-        const docRef = txRef.doc();
-        txIds.push(docRef.id);
-        batch.set(docRef, tx);
-      });
-      await batch.commit();
+
+    if (manualVerificationEnabled) {
+      const pendingRef = db.collection('users').doc(userId).collection('pendingTransactions');
+      for (let i = 0; i < newTransactions.length; i += BATCH_SIZE) {
+        const chunk = newTransactions.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+        chunk.forEach((tx) => {
+          const docRef = pendingRef.doc();
+          txIds.push(docRef.id);
+          batch.set(docRef, tx);
+        });
+        await batch.commit();
+      }
+    } else {
+      const txRef = db.collection('users').doc(userId).collection('transactions');
+      for (let i = 0; i < newTransactions.length; i += BATCH_SIZE) {
+        const chunk = newTransactions.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+        chunk.forEach((tx) => {
+          const docRef = txRef.doc();
+          txIds.push(docRef.id);
+          batch.set(docRef, tx);
+        });
+        await batch.commit();
+      }
     }
     
     await db.collection('users').doc(userId).set({
