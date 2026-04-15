@@ -10,6 +10,17 @@ export interface Transaction {
   messageId?: string;
 }
 
+export interface PendingTransaction {
+  merchant: string;
+  amount: number;
+  date: string;
+  categories: string[];
+  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo';
+  messageId: string;
+  createdAt: string;
+  status: 'pending';
+}
+
 export interface Category {
   id: string;
   userId: string;
