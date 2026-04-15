@@ -15,6 +15,7 @@ const Icon = ({ d, size = 18 }: { d: string; size?: number }) => (
 const icons = {
   dashboard:    'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
   transactions: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  pending:      'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2',
   categories:   'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
   history:      'M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
   analytics:    'M18 20V10M12 20V4M6 20v-6',
@@ -28,6 +29,7 @@ const icons = {
 const navMain = [
   { label: 'Dashboard',    href: '/dashboard',            icon: icons.dashboard },
   { label: 'Transactions', href: '/dashboard/history',    icon: icons.transactions },
+  { label: 'Pending',      href: '/dashboard/pending',    icon: icons.pending },
   { label: 'Categories',   href: '/dashboard/categories', icon: icons.categories },
   { label: 'Analytics',    href: '/dashboard/analytics',  icon: icons.analytics },
   { label: 'Settings',     href: '/dashboard/settings',   icon: icons.settings },
