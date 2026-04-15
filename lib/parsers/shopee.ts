@@ -16,7 +16,7 @@ export function parseShopeeEmail(email: ShopeeEmail): ParsedEmail | null {
 
   const date = dateMatch ? (() => {
     const [day, month, year] = dateMatch[1].split('/');
-    return new Date(`${year}-${month}-${day}`).toISOString();
+    return new Date(`${year}-${month}-${day}T12:00:00.000Z`).toISOString();
   })() : new Date().toISOString();
 
   return {
