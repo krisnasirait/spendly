@@ -117,14 +117,7 @@ export async function POST() {
       await batch.commit();
     }
 
-    console.log('=== Email Scan Debug ===');
-    console.log('Total emails fetched:', emails.length);
-    console.log('Transactions after parsing:', transactions.length);
-    console.log('Existing messageIds in DB:', existingSnap.size);
-    console.log('Duplicates found:', duplicates);
-    console.log('New transactions to save:', newTransactions.length);
-    
-    const txRef = db.collection('users').doc(userId).collection('transactions');
+const txRef = db.collection('users').doc(userId).collection('transactions');
     
     const BATCH_SIZE = 500;
     const txIds: string[] = [];
@@ -138,7 +131,7 @@ export async function POST() {
       });
       await batch.commit();
     }
-
+    
     await db.collection('users').doc(userId).set({
       lastScanAt: new Date(),
     }, { merge: true });
