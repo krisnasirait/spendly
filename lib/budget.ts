@@ -1,4 +1,4 @@
-import type { Transaction, Budget } from '@/types';
+import type { Transaction } from '@/types';
 
 export const CATEGORY_LABELS: Record<string, string> = {
   food: 'Food & Drinks',
