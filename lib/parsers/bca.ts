@@ -8,6 +8,9 @@ interface BCAEmail {
 
 export function parseBCAEmail(email: BCAEmail): ParsedEmail | null {
   const subjectLower = email.subject.toLowerCase();
+  const isReversalVoid = subjectLower.includes('reversal') || subjectLower.includes('void');
+  if (isReversalVoid) return null;
+
   const isCreditCardNotification = subjectLower.includes('credit card transaction notification');
 
   let amount: number;
