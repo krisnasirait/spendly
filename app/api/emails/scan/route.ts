@@ -71,6 +71,7 @@ export async function POST() {
             source,
             userId,
             createdAt: new Date().toISOString(),
+            messageId: email.id,
           });
         }
       } catch (e) {
@@ -84,28 +85,24 @@ export async function POST() {
       .collection('users')
       .doc(userId)
       .collection('transactions')
-      .select('merchant', 'amount', 'date')
+      .select('messageId')
       .get();
 
-    const existingKeys = new Set(
-      existingSnap.docs.map(doc => {
-        const d = doc.data() as { merchant: string; amount: number; date: string | Date };
-        const dateStr = typeof d.date === 'string' ? d.date.substring(0, 10) : '';
-        return `${d.merchant}|${d.amount}|${dateStr}`;
-      })
+    const existingMessageIds = new Set(
+      existingSnap.docs
+        .map(doc => doc.data().messageId)
+        .filter((id): id is string => typeof id === 'string')
     );
 
     const newTransactions: (typeof transactions[0])[] = [];
     let duplicates = 0;
 
     for (const tx of transactions) {
-      const dateStr = tx.date?.substring(0, 10) || '';
-      const key = `${tx.merchant}|${tx.amount}|${dateStr}`;
-      if (existingKeys.has(key)) {
+      if (existingMessageIds.has(tx.messageId!)) {
         duplicates++;
       } else {
         newTransactions.push(tx);
-        existingKeys.add(key);
+        existingMessageIds.add(tx.messageId!);
       }
     }
 
