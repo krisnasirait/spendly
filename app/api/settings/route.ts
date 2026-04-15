@@ -21,7 +21,7 @@ export async function GET() {
     const snap = await docRef.get();
 
     if (!snap.exists) {
-      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1 });
+      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1, manualVerificationEnabled: false });
     }
 
     return NextResponse.json(snap.data());
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { sources, scanPeriodDays, billingStartDay } = body;
+    const { sources, scanPeriodDays, billingStartDay, manualVerificationEnabled } = body;
 
     if (sources !== undefined && !Array.isArray(sources)) {
       return NextResponse.json({ error: 'sources must be an array' }, { status: 400 });
@@ -55,13 +55,45 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: 'billingStartDay must be a number between 1 and 28' }, { status: 400 });
       }
     }
+    if (manualVerificationEnabled !== undefined && typeof manualVerificationEnabled !== 'boolean') {
+      return NextResponse.json({ error: 'manualVerificationEnabled must be a boolean' }, { status: 400 });
+    }
 
     const updates: Record<string, unknown> = {};
     if (sources !== undefined) updates.sources = sources;
     if (scanPeriodDays !== undefined) updates.scanPeriodDays = scanPeriodDays;
     if (billingStartDay !== undefined) updates.billingStartDay = billingStartDay;
+    if (manualVerificationEnabled !== undefined) updates.manualVerificationEnabled = manualVerificationEnabled;
 
     const db = getDb();
+    if (manualVerificationEnabled === false) {
+      const pendingSnap = await db.collection('users').doc(userId).collection('pendingTransactions').get();
+      if (!pendingSnap.empty) {
+        const batch = db.batch();
+        const txRef = db.collection('users').doc(userId).collection('transactions');
+        let approvedCount = 0;
+        
+        for (const pendingDoc of pendingSnap.docs) {
+          const data = pendingDoc.data();
+          const newTxRef = txRef.doc();
+          batch.set(newTxRef, {
+            merchant: data.merchant,
+            amount: data.amount,
+            date: new Date(data.date),
+            categories: data.categories,
+            source: data.source,
+            userId,
+            createdAt: new Date(),
+            messageId: data.messageId,
+          });
+          batch.delete(pendingDoc.ref);
+          approvedCount++;
+        }
+        await batch.commit();
+        console.log(`Auto-approved ${approvedCount} pending transactions`);
+      }
+    }
+
     const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
     await docRef.set(updates, { merge: true });
 
