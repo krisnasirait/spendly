@@ -7,6 +7,7 @@ export interface Transaction {
   categories: string[];
   source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo';
   createdAt: string;
+  messageId?: string;
 }
 
 export interface Category {
