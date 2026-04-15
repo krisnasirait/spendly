@@ -3,7 +3,8 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import type { Transaction, Insight } from '@/types';
+import type { Transaction, Insight, Budget } from '@/types';
+import { BudgetOverview } from '@/components/dashboard/BudgetOverview';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -164,15 +165,18 @@ export default function DashboardPage() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [billingStartDay, setBillingStartDay] = useState(1);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [txData, insightData] = await Promise.all([
+    const [txData, insightData, budgetData] = await Promise.all([
       fetch('/api/transactions').then((r) => r.json()),
       fetch('/api/insights').then((r) => r.json()),
+      fetch('/api/budgets').then((r) => r.json()),
     ]);
     setTransactions(txData.transactions || []);
     setInsights(insightData.insights || []);
+    setBudgets(budgetData.budgets || []);
     setLoading(false);
   }, []);
 
@@ -212,6 +216,10 @@ export default function DashboardPage() {
       userId: (session?.user as { id?: string })?.id || '',
       createdAt: new Date().toISOString(),
     }, ...prev]);
+  }
+
+  function handleUpdateBudgets(newBudgets: Budget[]) {
+    setBudgets(newBudgets);
   }
 
   /* ── derived stats ── */
@@ -419,6 +427,15 @@ export default function DashboardPage() {
             value={topMerchant ? `${topMerchant.name} (${topMerchant.count})` : '—'}
           />
         </div>
+      )}
+
+      {/* ── Budget Overview ── */}
+      {budgets.filter(b => b.amount > 0).length > 0 && (
+        <BudgetOverview
+          budgets={budgets}
+          transactions={transactions}
+          onUpdateBudgets={handleUpdateBudgets}
+        />
       )}
 
       {/* ── Charts row ── */}
