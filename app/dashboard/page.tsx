@@ -103,43 +103,68 @@ function StatCard({ label, value, change, isNeg, icon }: {
 
 function InsightCard({ insight }: { insight: Insight }) {
   const severityStyles = {
-    high:   { bg: 'var(--danger-bg)',   border: '#FECACA', icon: <AlertIco /> },
-    medium: { bg: 'var(--warning-bg)',  border: '#FDE68A', icon: <AlertIco /> },
-    low:    { bg: 'var(--success-bg)',  border: '#A7F3D0', icon: <CheckCircleIco /> },
+    high:   { bg: '#FEF2F2', border: '#FCA5A5', color: '#DC2626', icon: <AlertIco /> },
+    medium: { bg: '#FFFBEB', border: '#FDE68A', color: '#D97706', icon: <AlertIco /> },
+    low:    { bg: '#ECFDF5', border: '#A7F3D0', color: '#059669', icon: <CheckCircleIco /> },
   }[insight.severity];
 
   const typeColors = {
-    spike:        'var(--danger)',
-    budget_alert:  'var(--warning)',
-    unusual_tx:    '#8B5CF6',
-    encouragement:'var(--success)',
-    trend:        'var(--accent)',
-    category_overload: 'var(--warning)',
-    pattern:      'var(--accent)',
-  }[insight.type] || 'var(--text-secondary)';
+    spike:           '#EC4899',
+    budget_alert:    '#F59E0B',
+    unusual_tx:      '#8B5CF6',
+    encouragement:   '#10B981',
+    trend:           '#7C3AED',
+    category_overload: '#F59E0B',
+    pattern:         '#7C3AED',
+  }[insight.type] || '#7C3AED';
 
   return (
     <div style={{
-      padding: '14px 16px', borderRadius: 12,
+      padding: '14px 16px',
+      borderRadius: 14,
       background: severityStyles.bg,
-      border: `1px solid ${severityStyles.border}`,
-      display: 'flex', alignItems: 'flex-start', gap: 12,
+      borderLeft: `4px solid ${typeColors}`,
+      display: 'flex', 
+      alignItems: 'flex-start', 
+      gap: 12,
       transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-      cursor: 'default',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateX(4px)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateX(0)';
+      e.currentTarget.style.boxShadow = 'none';
     }}>
-      <div style={{ flexShrink: 0, paddingTop: 2 }}>{severityStyles.icon}</div>
+      <div style={{ 
+        flexShrink: 0, 
+        paddingTop: 2,
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        background: `${typeColors}15`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <span style={{ color: typeColors }}>{severityStyles.icon}</span>
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: 6 }}>{insight.text}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: 8 }}>{insight.text}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ 
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
             color: typeColors,
+            background: `${typeColors}15`,
+            padding: '2px 8px',
+            borderRadius: 999,
           }}>
             {insight.type.replace('_', ' ')}
           </span>
           <span style={{ 
             fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
-            color: 'var(--text-muted)',
+            color: severityStyles.color,
           }}>
             {insight.severity}
           </span>
