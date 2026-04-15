@@ -11,6 +11,7 @@ export interface Transaction {
 }
 
 export interface PendingTransaction {
+  id: string;
   merchant: string;
   amount: number;
   date: string;

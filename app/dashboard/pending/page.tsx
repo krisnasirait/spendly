@@ -50,6 +50,7 @@ function EditPendingPanel({
   const [showCreate, setShowCreate] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     setCategoriesLoading(true);
@@ -84,7 +85,7 @@ function EditPendingPanel({
               setCategories(prev => [...prev, newCat.name]);
             }
           }
-        }).catch(() => {});
+        }).catch(() => { setCreateError('Failed to create category'); });
       } else {
         const matched = allCategories.find(c => c.name.toLowerCase() === name.toLowerCase());
         if (matched) {
@@ -205,6 +206,7 @@ function EditPendingPanel({
 
             {categoriesLoading && <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading categories…</div>}
             {categoriesError && <div style={{ fontSize: 13, color: '#EF4444' }}>{categoriesError}</div>}
+            {createError && <div style={{ fontSize: 13, color: '#EF4444' }}>{createError}</div>}
             {!categoriesLoading && !categoriesError && (
               <input
                 value={newCatInput}
@@ -278,6 +280,7 @@ export default function PendingPage() {
   const [transactions, setTransactions] = useState<PendingTx[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<PendingTx | null>(null);
 
   useEffect(() => {
@@ -305,7 +308,11 @@ export default function PendingPage() {
       });
       if (res.ok) {
         setTransactions(prev => prev.filter(t => t.id !== id));
+      } else {
+        setActionError('Failed to complete action. Please try again.');
       }
+    } catch {
+      setActionError('Network error. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -336,6 +343,12 @@ export default function PendingPage() {
           </p>
         </div>
       </div>
+
+      {actionError && (
+        <div style={{ padding: '12px 16px', borderRadius: 8, background: '#FEE2E2', color: '#991B1B', fontSize: 13 }}>
+          {actionError}
+        </div>
+      )}
 
       <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
         {transactions.length === 0 ? (
