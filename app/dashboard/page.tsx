@@ -450,7 +450,7 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       {loading ? <SkeletonCards /> : (
-        <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, }}>
           <StatCard
             label="Total Spend"
             value={fmt(currentTotal)}
@@ -483,7 +483,7 @@ export default function DashboardPage() {
       )}
 
       {/* Main content grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, }}>
         {/* Charts column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Money flow chart */}
