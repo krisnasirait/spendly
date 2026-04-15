@@ -90,8 +90,15 @@ export async function POST() {
       .select('messageId')
       .get();
 
+    const pendingSnap = await db
+      .collection('users')
+      .doc(userId)
+      .collection('pendingTransactions')
+      .select('messageId')
+      .get();
+
     const existingMessageIds = new Set(
-      existingSnap.docs
+      [...existingSnap.docs, ...pendingSnap.docs]
         .map(doc => doc.data().messageId)
         .filter((id): id is string => typeof id === 'string')
     );
