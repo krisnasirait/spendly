@@ -457,6 +457,74 @@ export default function HistoryPage() {
         </div>
       </div>
 
+      {selected.size > 0 && (
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          padding: '12px 16px',
+          background: 'var(--accent)',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          borderRadius: '8px 8px 0 0',
+          marginTop: 16,
+        }}>
+          <span style={{ fontWeight: 600, flex: 1 }}>
+            {selected.size} selected
+          </span>
+          <select
+            value={bulkCategory}
+            onChange={(e) => setBulkCategory(e.target.value)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: 6,
+              border: 'none',
+              fontSize: 13,
+              color: 'var(--text-primary)',
+            }}
+          >
+            <option value="">Select category...</option>
+            <option value="food">Food & Drinks</option>
+            <option value="shopping">Shopping</option>
+            <option value="transport">Transport</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="other">Other</option>
+          </select>
+          <button
+            onClick={handleBulkCategoryChange}
+            disabled={!bulkCategory || bulkApplying}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 6,
+              border: 'none',
+              background: bulkCategory ? '#fff' : 'rgba(255,255,255,0.5)',
+              color: bulkCategory ? 'var(--accent)' : 'rgba(255,255,255,0.7)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: bulkCategory ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {bulkApplying ? 'Applying...' : 'Apply'}
+          </button>
+          <button
+            onClick={() => { setSelected(new Set()); setBulkCategory(''); }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 6,
+              border: '1px solid rgba(255,255,255,0.5)',
+              background: 'transparent',
+              color: '#fff',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
         {paged.length === 0 ? (
