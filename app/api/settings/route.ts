@@ -21,7 +21,7 @@ export async function GET() {
     const snap = await docRef.get();
 
     if (!snap.exists) {
-      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1, manualVerificationEnabled: false });
+      return NextResponse.json({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1, manualVerificationEnabled: false, hasSeenOnboarding: false });
     }
 
     return NextResponse.json(snap.data());
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { sources, scanPeriodDays, billingStartDay, manualVerificationEnabled } = body;
+    const { sources, scanPeriodDays, billingStartDay, manualVerificationEnabled, hasSeenOnboarding } = body;
 
     if (sources !== undefined && !Array.isArray(sources)) {
       return NextResponse.json({ error: 'sources must be an array' }, { status: 400 });
@@ -55,6 +55,9 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: 'billingStartDay must be a number between 1 and 31' }, { status: 400 });
       }
     }
+    if (hasSeenOnboarding !== undefined && typeof hasSeenOnboarding !== 'boolean') {
+      return NextResponse.json({ error: 'hasSeenOnboarding must be a boolean' }, { status: 400 });
+    }
     if (manualVerificationEnabled !== undefined && typeof manualVerificationEnabled !== 'boolean') {
       return NextResponse.json({ error: 'manualVerificationEnabled must be a boolean' }, { status: 400 });
     }
@@ -64,6 +67,7 @@ export async function PUT(req: NextRequest) {
     if (scanPeriodDays !== undefined) updates.scanPeriodDays = scanPeriodDays;
     if (billingStartDay !== undefined) updates.billingStartDay = billingStartDay;
     if (manualVerificationEnabled !== undefined) updates.manualVerificationEnabled = manualVerificationEnabled;
+    if (hasSeenOnboarding !== undefined) updates.hasSeenOnboarding = hasSeenOnboarding;
 
     const db = getDb();
     const docRef = db.collection('users').doc(userId).collection('settings').doc('preferences');
