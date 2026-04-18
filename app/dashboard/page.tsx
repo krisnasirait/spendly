@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useDevice } from '@/hooks/useDevice';
 import type { Transaction, Insight, Budget } from '@/types';
 import { BudgetOverview } from '@/components/dashboard/BudgetOverview';
 import {
@@ -212,6 +213,7 @@ type Period = 'today' | 'week' | 'month' | 'all';
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isMobile } = useDevice();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -749,6 +751,7 @@ export default function DashboardPage() {
       </div>
 
       {/* FAB */}
+      {!isMobile && (
       <button
         onClick={() => setShowAddPanel(true)}
         style={{
@@ -781,6 +784,7 @@ export default function DashboardPage() {
       >
         +
       </button>
+      )}
 
       {showAddPanel && (
         <AddTransactionPanel
