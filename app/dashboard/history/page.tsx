@@ -75,6 +75,8 @@ export default function HistoryPage() {
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkCategory, setBulkCategory] = useState('');
+  const [bulkApplying, setBulkApplying] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
@@ -180,6 +182,32 @@ export default function HistoryPage() {
       }
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleBulkCategoryChange() {
+    if (selected.size === 0 || !bulkCategory) return;
+    setBulkApplying(true);
+    try {
+      const ids = Array.from(selected);
+      for (const id of ids) {
+        await fetch(`/api/transactions?id=${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, categories: [bulkCategory] }),
+        });
+      }
+      setTransactions(prev =>
+        prev.map(tx =>
+          selected.has(tx.id) ? { ...tx, categories: [bulkCategory] } : tx
+        )
+      );
+      setSelected(new Set());
+      setBulkCategory('');
+    } catch (error) {
+      console.error('Bulk update failed:', error);
+    } finally {
+      setBulkApplying(false);
     }
   }
 
