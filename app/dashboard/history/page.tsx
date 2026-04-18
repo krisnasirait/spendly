@@ -27,7 +27,35 @@ const sourceBadge: Record<string, { label: string; color: string; bg: string }> 
 const ITEMS_PER_PAGE = 15;
 
 type SortKey = 'date' | 'amount' | 'merchant';
-type Period = 'today' | 'week' | 'month' | 'all';
+interface DateRange {
+  start: Date;
+  end: Date;
+}
+
+const QUICK_RANGES: Array<{ label: string; getValue: () => DateRange | null }> = [
+  {
+    label: 'This Month',
+    getValue: () => {
+      const now = new Date();
+      return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
+    },
+  },
+  {
+    label: 'Last Month',
+    getValue: () => {
+      const now = new Date();
+      return { start: new Date(now.getFullYear(), now.getMonth() - 1, 1), end: new Date(now.getFullYear(), now.getMonth(), 0) };
+    },
+  },
+  {
+    label: 'Last 3 Months',
+    getValue: () => {
+      const now = new Date();
+      return { start: new Date(now.getFullYear(), now.getMonth() - 2, 1), end: now };
+    },
+  },
+  { label: 'Custom', getValue: () => null },
+];
 
 export default function HistoryPage() {
   const { data: session, status } = useSession();
@@ -37,7 +65,11 @@ export default function HistoryPage() {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('');
   const [filterSource, setFilterSource] = useState('');
-  const [period, setPeriod] = useState<Period>('month');
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+  const now = new Date();
+  return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
+});
+const [showCustom, setShowCustom] = useState(false);
   const [billingStartDay, setBillingStartDay] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
