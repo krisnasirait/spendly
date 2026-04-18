@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getCategoryColor } from '@/lib/category-colors';
+import { useDevice } from '@/hooks/useDevice';
 import type { Transaction } from '@/types';
 
 interface AddTransactionPanelProps {
@@ -25,6 +26,7 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isMobile } = useDevice();
 
   useEffect(() => {
     fetch('/api/categories')
@@ -134,18 +136,27 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
   return (
     <>
       <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40,
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 199,
+        display: 'flex', justifyContent: 'flex-end',
       }} />
       <div style={{
-        position: 'fixed', right: 0, top: 0, bottom: 0, width: 400,
-        background: 'var(--bg-surface)', zIndex: 50,
-        boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+        position: 'fixed',
+        ...(isMobile
+          ? { left: 0, right: 0, bottom: 0, top: 'auto', width: '100%', height: '85vh', borderRadius: '16px 16px 0 0' }
+          : { right: 0, top: 0, bottom: 0, width: 400 }),
+        background: 'var(--bg-surface)', zIndex: 200,
         display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
+        boxShadow: isMobile ? '0 -4px 24px rgba(0,0,0,0.1)' : '-4px 0 24px rgba(0,0,0,0.1)',
+        overflow: isMobile ? 'hidden' : 'auto',
       }}>
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700 }}>Add Transaction</h2>
+          {isMobile && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px', position: 'absolute', left: 0, right: 0, top: 0 }}>
+              <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2 }} />
+            </div>
+          )}
+          <h2 style={{ fontSize: 16, fontWeight: 700, padding: isMobile ? '16px 0 0' : '0 0 8px' }}>Add Transaction</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--text-muted)' }}>×</button>
         </div>
 
@@ -157,7 +168,8 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
             <input value={merchant} onChange={e => setMerchant(e.target.value)} placeholder="e.g., Warung Kopi" style={{
               width: '100%', padding: '10px 14px', borderRadius: 10,
               border: '1.5px solid var(--border)', background: 'var(--bg-page)',
-              fontSize: 14, color: 'var(--text-primary)', outline: 'none',
+              fontSize: isMobile ? 15 : 14, color: 'var(--text-primary)', outline: 'none',
+              height: isMobile ? 48 : 40,
             }} />
           </div>
 
@@ -167,7 +179,8 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
             <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g., 50000" style={{
               width: '100%', padding: '10px 14px', borderRadius: 10,
               border: '1.5px solid var(--border)', background: 'var(--bg-page)',
-              fontSize: 14, color: 'var(--text-primary)', outline: 'none',
+              fontSize: isMobile ? 15 : 14, color: 'var(--text-primary)', outline: 'none',
+              height: isMobile ? 48 : 40,
             }} />
           </div>
 
@@ -177,7 +190,8 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{
               width: '100%', padding: '10px 14px', borderRadius: 10,
               border: '1.5px solid var(--border)', background: 'var(--bg-page)',
-              fontSize: 14, color: 'var(--text-primary)', outline: 'none',
+              fontSize: isMobile ? 15 : 14, color: 'var(--text-primary)', outline: 'none',
+              height: isMobile ? 48 : 40,
             }} />
           </div>
 
@@ -218,7 +232,8 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 10,
                 border: '1.5px solid var(--border)', background: 'var(--bg-page)',
-                fontSize: 14, color: 'var(--text-primary)', outline: 'none',
+                fontSize: isMobile ? 15 : 14, color: 'var(--text-primary)', outline: 'none',
+                height: isMobile ? 48 : 40,
               }}
             />
 
@@ -253,15 +268,15 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10 }}>
           {error && (
             <div style={{ padding: '10px 14px', borderRadius: 8, background: '#FEE2E2', color: '#991B1B', fontSize: 13 }}>
               {error}
             </div>
           )}
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={onClose} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>
+          <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
+            <button onClick={onClose} className="btn btn-ghost" style={{ flex: isMobile ? 1 : 'none', height: isMobile ? 48 : 40, borderRadius: isMobile ? 12 : 8 }}>Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ flex: isMobile ? 1 : 'none', width: isMobile ? '100%' : 'auto', height: isMobile ? 48 : 40, borderRadius: isMobile ? 12 : 8 }}>
               {saving ? 'Adding…' : 'Add Transaction'}
             </button>
           </div>
