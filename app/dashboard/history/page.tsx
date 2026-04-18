@@ -69,8 +69,10 @@ export default function HistoryPage() {
   const now = new Date();
   return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
 });
-const [showCustom, setShowCustom] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
   const [billingStartDay, setBillingStartDay] = useState(1);
+  // TODO [Task 2/3]: Replace period state with dateRange filtering; stubbed for compilation
+  const period: string = 'all';
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
@@ -320,10 +322,10 @@ const [showCustom, setShowCustom] = useState(false);
         </select>
 
         <div style={{ display: 'flex', gap: 4, background: 'var(--bg-page)', borderRadius: 'var(--radius-pill)', padding: 4 }}>
-          {(['today', 'week', 'month', 'all'] as Period[]).map(p => (
+          {(['today', 'week', 'month', 'all'] as string[]).map(p => (
             <button
               key={p}
-              onClick={() => { setPeriod(p); setPage(1); }}
+              onClick={() => { setPage(1); }}
               style={{
                 padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: 'none',
                 fontSize: 12, fontWeight: 600, cursor: 'pointer',
