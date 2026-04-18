@@ -406,6 +406,12 @@ export default function SettingsPage() {
   const [scanResults, setScanResults] = useState<ScanResults | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [showFullResults, setShowFullResults] = useState(false);
+  const [notificationPrefs, setNotificationPrefs] = useState<{
+    enabled: boolean;
+    budgetAlerts: boolean;
+    weeklySummary: boolean;
+    recurringReminders: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -428,6 +434,13 @@ export default function SettingsPage() {
   useEffect(() => {
     if (session?.user) loadSettings();
   }, [session, loadSettings]);
+
+  useEffect(() => {
+    fetch('/api/notifications/preferences')
+      .then(res => res.json())
+      .then(data => setNotificationPrefs(data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!showFullResults) return;
@@ -613,6 +626,87 @@ export default function SettingsPage() {
               }} />
             </button>
           </div>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Notifications"
+        description="Manage your browser notification preferences"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 500 }}>Enable Notifications</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Receive alerts in your browser</p>
+            </div>
+            <button
+              onClick={async () => {
+                if (!('Notification' in window)) {
+                  alert('Your browser does not support notifications');
+                  return;
+                }
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                  const newEnabled = !notificationPrefs?.enabled;
+                  await fetch('/api/notifications/preferences', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: newEnabled }),
+                  });
+                  setNotificationPrefs(prev => prev ? { ...prev, enabled: newEnabled } : null);
+                }
+              }}
+              style={{
+                width: 44,
+                height: 24,
+                borderRadius: 12,
+                border: 'none',
+                background: notificationPrefs?.enabled ? 'var(--accent)' : 'var(--border)',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'background 0.2s',
+              }}
+            >
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: '#fff',
+                position: 'absolute',
+                top: 2,
+                left: notificationPrefs?.enabled ? 22 : 2,
+                transition: 'left 0.2s',
+              }} />
+            </button>
+          </div>
+
+          {notificationPrefs?.enabled && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(['budgetAlerts', 'weeklySummary', 'recurringReminders'] as const).map(key => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs[key] as boolean}
+                    onChange={async () => {
+                      const newVal = !notificationPrefs[key];
+                      await fetch('/api/notifications/preferences', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ [key]: newVal }),
+                      });
+                      setNotificationPrefs(prev => prev ? { ...prev, [key]: newVal } : null);
+                    }}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <span style={{ fontSize: 13 }}>
+                    {key === 'budgetAlerts' ? 'Budget Alerts' :
+                     key === 'weeklySummary' ? 'Weekly Summary' :
+                     'Recurring Reminders'}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </SettingsSection>
 
