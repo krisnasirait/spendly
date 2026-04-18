@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface TourStep {
   title: string;
@@ -36,6 +36,14 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   const step = TOUR_STEPS[currentStep];
   const isLast = currentStep === TOUR_STEPS.length - 1;
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onComplete();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onComplete]);
+
   const handleNext = () => {
     if (isLast) {
       onComplete();
@@ -58,16 +66,21 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
       alignItems: 'center',
       justifyContent: 'center',
     }}>
-      <div style={{
-        background: 'var(--bg-surface)',
-        borderRadius: 16,
-        padding: 24,
-        maxWidth: 400,
-        width: '90%',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-      }}>
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-title"
+        style={{
+          background: 'var(--bg-surface)',
+          borderRadius: 16,
+          padding: 24,
+          maxWidth: 400,
+          width: '90%',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        }}
+      >
         <div style={{ marginBottom: 16 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{step.title}</h3>
+          <h3 id="onboarding-title" style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{step.title}</h3>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             {step.description}
           </p>
@@ -91,6 +104,8 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={handleSkip}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-page)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               style={{
                 padding: '8px 16px',
                 borderRadius: 8,
@@ -99,12 +114,15 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 color: 'var(--text-muted)',
                 fontSize: 13,
                 cursor: 'pointer',
+                transition: 'background 0.15s',
               }}
             >
               Skip
             </button>
             <button
               onClick={handleNext}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
               style={{
                 padding: '8px 16px',
                 borderRadius: 8,
@@ -114,6 +132,7 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
+                transition: 'opacity 0.15s',
               }}
             >
               {isLast ? 'Get Started' : 'Next'}
