@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface NotificationPreferences {
   enabled: boolean;
@@ -11,32 +11,76 @@ interface NotificationPreferences {
 
 export function NotificationBell() {
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('/api/notifications/preferences')
-      .then(res => res.json())
-      .then(data => setPrefs(data))
-      .catch(() => {});
+    const controller = new AbortController();
+    setLoading(true);
+    fetch('/api/notifications/preferences', { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load');
+        return res.json();
+      })
+      .then(data => {
+        setPrefs(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        setLoading(false);
+      });
+    return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDropdown]);
 
   const handleToggle = async (key: keyof NotificationPreferences) => {
     if (!prefs) return;
     const newPrefs = { ...prefs, [key]: !prefs[key] };
-    await fetch('/api/notifications/preferences', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newPrefs),
-    });
     setPrefs(newPrefs);
+    try {
+      await fetch('/api/notifications/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPrefs),
+      });
+    } catch {
+      setPrefs(prefs);
+    }
   };
+
+  if (loading) {
+    return (
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+      }} />
+    );
+  }
 
   if (!prefs?.enabled) return null;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
+        aria-label="Notifications"
+        aria-expanded={showDropdown}
         style={{
           width: 36,
           height: 36,
