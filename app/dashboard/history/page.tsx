@@ -460,7 +460,7 @@ export default function HistoryPage() {
       {selected.size > 0 && (
         <div style={{
           position: 'sticky',
-          top: 0,
+          top: 32,
           zIndex: 50,
           padding: '12px 16px',
           background: 'var(--accent)',
@@ -469,7 +469,6 @@ export default function HistoryPage() {
           alignItems: 'center',
           gap: 12,
           borderRadius: '8px 8px 0 0',
-          marginTop: 16,
         }}>
           <span style={{ fontWeight: 600, flex: 1 }}>
             {selected.size} selected
@@ -482,7 +481,7 @@ export default function HistoryPage() {
               borderRadius: 6,
               border: 'none',
               fontSize: 13,
-              color: 'var(--text-primary)',
+              color: '#fff',
             }}
           >
             <option value="">Select category...</option>
