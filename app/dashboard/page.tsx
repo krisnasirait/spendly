@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDevice } from '@/hooks/useDevice';
+import { useAddTransaction } from '@/contexts/AddTransactionContext';
 import type { Transaction, Insight, Budget } from '@/types';
 import { BudgetOverview } from '@/components/dashboard/BudgetOverview';
 import {
@@ -12,7 +13,6 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
-import AddTransactionPanel from '@/components/AddTransactionPanel';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { getCategoryColor } from '@/lib/category-colors';
 import { getBillingPeriod, isInBillingPeriod, getPreviousBillingPeriod } from '@/lib/billing-period';
@@ -214,13 +214,13 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { isMobile } = useDevice();
+  const { open: openAddPanel } = useAddTransaction();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
-  const [showAddPanel, setShowAddPanel] = useState(false);
   const [billingStartDay, setBillingStartDay] = useState(1);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
@@ -753,7 +753,7 @@ export default function DashboardPage() {
       {/* FAB */}
       {!isMobile && (
       <button
-        onClick={() => setShowAddPanel(true)}
+        onClick={openAddPanel}
         style={{
           position: 'fixed',
           bottom: 28,
@@ -784,13 +784,6 @@ export default function DashboardPage() {
       >
         +
       </button>
-      )}
-
-      {showAddPanel && (
-        <AddTransactionPanel
-          onClose={() => setShowAddPanel(false)}
-          onAdd={handleAdd}
-        />
       )}
 
       {editingTx && (
