@@ -12,6 +12,7 @@ const SOURCES = [
   { key: 'traveloka', label: 'Traveloka', query: 'from:traveloka' },
   { key: 'bca',       label: 'BCA',       query: 'from:bca' },
   { key: 'ayo',       label: 'AYO Indonesia', query: 'from:ayo' },
+  { key: 'jago',      label: 'Jago',      query: 'from:jago' },
 ];
 
 const PERIODS = [
@@ -55,6 +56,7 @@ const sourceColors: Record<string, { color: string; bg: string }> = {
   traveloka: { color: '#0064D2', bg: '#EBF4FF' },
   bca:       { color: '#005BAC', bg: '#EBF2FF' },
   ayo:       { color: '#FF6B00', bg: '#FFF4EE' },
+  jago:      { color: '#00A651', bg: '#E8F5ED' },
 };
 
 const fmtCurrency = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -396,7 +398,7 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo'], scanPeriodDays: 30, billingStartDay: 1, manualVerificationEnabled: false });
+  const [settings, setSettings] = useState<Settings>({ sources: ['shopee', 'tokopedia', 'traveloka', 'bca', 'ayo', 'jago'], scanPeriodDays: 30, billingStartDay: 1, manualVerificationEnabled: false });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -558,7 +560,7 @@ export default function SettingsPage() {
           <input
             type="number"
             min={1}
-            max={28}
+            max={31}
             value={settings.billingStartDay}
             onChange={(e) => saveSettings({ ...settings, billingStartDay: Number(e.target.value) })}
             style={{

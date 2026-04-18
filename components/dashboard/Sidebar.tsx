@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 const Icon = ({ d, size = 18 }: { d: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -33,6 +34,22 @@ const navMain = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const handler = () => {
+      fetch('/api/pending?action=count')
+        .then(res => res.json())
+        .then(data => setPendingCount(data.count || 0))
+        .catch(() => {});
+    };
+    window.addEventListener('pending-count-refresh', handler);
+    fetch('/api/pending?action=count')
+      .then(res => res.json())
+      .then(data => setPendingCount(data.count || 0))
+      .catch(() => {});
+    return () => window.removeEventListener('pending-count-refresh', handler);
+  }, []);
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname.startsWith(href);
@@ -94,7 +111,22 @@ export function Sidebar() {
                   transition: 'all 0.15s ease',
                 }}>
                   <Icon d={icon} size={18} />
-                  {label}
+                  <span>{label}</span>
+                  {label === 'Pending' && pendingCount > 0 && (
+                    <span style={{
+                      marginLeft: 'auto',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: 10,
+                      minWidth: 18,
+                      textAlign: 'center',
+                    }}>
+                      {pendingCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

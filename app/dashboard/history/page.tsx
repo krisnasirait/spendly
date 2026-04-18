@@ -71,8 +71,6 @@ export default function HistoryPage() {
 });
   const [showCustom, setShowCustom] = useState(false);
   const [billingStartDay, setBillingStartDay] = useState(1);
-  // TODO [Task 2/3]: Replace period state with dateRange filtering; stubbed for compilation
-  const period: string = 'all';
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
@@ -105,32 +103,10 @@ export default function HistoryPage() {
     const now = new Date();
     let list = [...transactions];
     
-    if (period !== 'all') {
-      const { start, end } = getBillingPeriod(now, billingStartDay);
-      list = list.filter(t => {
-        const txDate = new Date(t.date);
-        switch (period) {
-          case 'today': {
-            const periodStart = getBillingPeriod(now, billingStartDay).start;
-            return txDate >= periodStart && txDate <= now;
-          }
-          case 'week': {
-            const periodStart = getBillingPeriod(now, billingStartDay).start;
-            const weekStart = new Date(periodStart);
-            const dayOfWeek = weekStart.getUTCDay();
-            const monStart = new Date(weekStart);
-            monStart.setUTCDate(monStart.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-            const weekEnd = new Date(monStart);
-            weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-            return txDate >= monStart && txDate < weekEnd;
-          }
-          case 'month':
-            return isInBillingPeriod(txDate, start, end);
-          default:
-            return true;
-        }
-      });
-    }
+    list = list.filter(t => {
+      const txDate = new Date(t.date);
+      return txDate >= dateRange.start && txDate <= dateRange.end;
+    });
     
     if (search) list = list.filter(t =>
       t.merchant.toLowerCase().includes(search.toLowerCase()));
@@ -144,7 +120,7 @@ export default function HistoryPage() {
       return sortAsc ? diff : -diff;
     });
     return list;
-  }, [transactions, search, filterCat, filterSource, sortKey, sortAsc, period, billingStartDay]);
+  }, [transactions, search, filterCat, filterSource, sortKey, sortAsc, dateRange]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paged = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);

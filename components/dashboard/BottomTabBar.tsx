@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const Icon = ({ d, size = 22 }: { d: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -25,6 +26,22 @@ interface BottomTabBarProps {
 
 export function BottomTabBar({ onAddClick, onMenuClick }: BottomTabBarProps) {
   const pathname = usePathname();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const handler = () => {
+      fetch('/api/pending?action=count')
+        .then(res => res.json())
+        .then(data => setPendingCount(data.count || 0))
+        .catch(() => {});
+    };
+    window.addEventListener('pending-count-refresh', handler);
+    fetch('/api/pending?action=count')
+      .then(res => res.json())
+      .then(data => setPendingCount(data.count || 0))
+      .catch(() => {});
+    return () => window.removeEventListener('pending-count-refresh', handler);
+  }, []);
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname.startsWith(href);
@@ -102,7 +119,25 @@ export function BottomTabBar({ onAddClick, onMenuClick }: BottomTabBarProps) {
                 color: active ? 'var(--accent)' : 'var(--text-muted)',
               }}>
                 <Icon d={icons[tab.icon as keyof typeof icons] as string} size={22} />
-                <span style={{ fontSize: 10, fontWeight: 500 }}>{tab.label}</span>
+                <span style={{ fontSize: 10, fontWeight: 500 }}>
+                  {tab.label}
+                  {tab.label === 'Pending' && pendingCount > 0 && (
+                    <span style={{
+                      display: 'inline-block',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      fontSize: 8,
+                      fontWeight: 700,
+                      padding: '1px 4px',
+                      borderRadius: 6,
+                      marginLeft: 3,
+                      minWidth: 14,
+                      textAlign: 'center',
+                    }}>
+                      {pendingCount}
+                    </span>
+                  )}
+                </span>
               </Link>
             ) : (
               <button

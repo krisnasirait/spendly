@@ -18,7 +18,7 @@ function isValidBcaEmail(from: string, subject: string): boolean {
   return isValidSender && isValidSubject;
 }
 
-function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'unknown' {
+function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago' | 'unknown' {
   const lower = from.toLowerCase();
   if (lower.includes('shopee')) return 'shopee';
   if (lower.includes('tokopedia')) return 'tokopedia';
@@ -28,6 +28,7 @@ function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | '
     return 'unknown';
   }
   if (lower.includes('ayo')) return 'ayo';
+  if (lower.includes('jago')) return 'jago';
   return 'unknown';
 }
 
@@ -126,13 +127,16 @@ export async function POST() {
       await batch.commit();
     }
 
-const BATCH_SIZE = 500;
+const jagoTxs = newTransactions.filter(tx => tx.source === 'jago');
+    const otherTxs = newTransactions.filter(tx => tx.source !== 'jago');
+
+    const BATCH_SIZE = 500;
     const txIds: string[] = [];
 
-    if (manualVerificationEnabled) {
+    if (jagoTxs.length > 0) {
       const pendingRef = db.collection('users').doc(userId).collection('pendingTransactions');
-      for (let i = 0; i < newTransactions.length; i += BATCH_SIZE) {
-        const chunk = newTransactions.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < jagoTxs.length; i += BATCH_SIZE) {
+        const chunk = jagoTxs.slice(i, i + BATCH_SIZE);
         const batch = db.batch();
         chunk.forEach((tx) => {
           const docRef = pendingRef.doc();
@@ -141,17 +145,33 @@ const BATCH_SIZE = 500;
         });
         await batch.commit();
       }
-    } else {
-      const txRef = db.collection('users').doc(userId).collection('transactions');
-      for (let i = 0; i < newTransactions.length; i += BATCH_SIZE) {
-        const chunk = newTransactions.slice(i, i + BATCH_SIZE);
-        const batch = db.batch();
-        chunk.forEach((tx) => {
-          const docRef = txRef.doc();
-          txIds.push(docRef.id);
-          batch.set(docRef, tx);
-        });
-        await batch.commit();
+    }
+
+    if (otherTxs.length > 0) {
+      if (manualVerificationEnabled) {
+        const pendingRef = db.collection('users').doc(userId).collection('pendingTransactions');
+        for (let i = 0; i < otherTxs.length; i += BATCH_SIZE) {
+          const chunk = otherTxs.slice(i, i + BATCH_SIZE);
+          const batch = db.batch();
+          chunk.forEach((tx) => {
+            const docRef = pendingRef.doc();
+            txIds.push(docRef.id);
+            batch.set(docRef, tx);
+          });
+          await batch.commit();
+        }
+      } else {
+        const txRef = db.collection('users').doc(userId).collection('transactions');
+        for (let i = 0; i < otherTxs.length; i += BATCH_SIZE) {
+          const chunk = otherTxs.slice(i, i + BATCH_SIZE);
+          const batch = db.batch();
+          chunk.forEach((tx) => {
+            const docRef = txRef.doc();
+            txIds.push(docRef.id);
+            batch.set(docRef, tx);
+          });
+          await batch.commit();
+        }
       }
     }
     

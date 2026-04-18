@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDb } from '@/lib/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -9,14 +10,32 @@ async function getUserId(): Promise<string | null> {
   return (session.user as { id: string }).id;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const userId = await getUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  if (searchParams.get('action') === 'count') {
+    const db = getDb();
+    const snap = await db
+      .collection('users')
+      .doc(userId)
+      .collection('pendingTransactions')
+      .count()
+      .get();
+    return NextResponse.json({ count: snap.data().count });
+  }
+
   try {
     const db = getDb();
+    function toISOString(value: unknown): string {
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === 'string') return value;
+      return String(value);
+    }
+
     const snap = await db
       .collection('users')
       .doc(userId)
@@ -30,11 +49,11 @@ export async function GET() {
         id: doc.id,
         merchant: data.merchant,
         amount: data.amount,
-        date: data.date instanceof Date ? data.date.toISOString() : (typeof data.date === 'string' ? data.date : String(data.date)),
+        date: toISOString(data.date),
         categories: data.categories || [],
         source: data.source,
         messageId: data.messageId,
-        createdAt: typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt instanceof Date ? data.createdAt.toISOString() : String(data.createdAt)),
+        createdAt: toISOString(data.createdAt),
         status: 'pending' as const,
       };
     });
@@ -75,10 +94,13 @@ export async function POST(req: NextRequest) {
 
     if (action === 'approve') {
       const txRef = db.collection('users').doc(userId).collection('transactions').doc();
+      const dateValue = data!.date instanceof Timestamp
+        ? data!.date.toDate()
+        : (data!.date instanceof Date ? data!.date : new Date(data!.date as string));
       await txRef.set({
         merchant: data!.merchant,
         amount: data!.amount,
-        date: new Date(data!.date),
+        date: dateValue,
         categories: data!.categories,
         source: data!.source,
         userId,
@@ -93,6 +115,45 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error('POST /api/pending error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  const userId = await getUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+  if (!id) {
+    return NextResponse.json({ error: 'id is required' }, { status: 400 });
+  }
+
+  try {
+    const body = await req.json();
+    const { merchant, amount, date, categories } = body;
+
+    const db = getDb();
+    const pendingRef = db.collection('users').doc(userId).collection('pendingTransactions').doc(id);
+    const pendingSnap = await pendingRef.get();
+
+    if (!pendingSnap.exists) {
+      return NextResponse.json({ error: 'pending transaction not found' }, { status: 404 });
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (merchant !== undefined) updates.merchant = merchant;
+    if (amount !== undefined) updates.amount = amount;
+    if (date !== undefined) updates.date = new Date(date);
+    if (categories !== undefined) updates.categories = categories;
+
+    await pendingRef.set(updates, { merge: true });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('PATCH /api/pending error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

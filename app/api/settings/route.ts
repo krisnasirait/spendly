@@ -51,8 +51,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'scanPeriodDays must be 7, 30, or 90' }, { status: 400 });
     }
     if (billingStartDay !== undefined) {
-      if (typeof billingStartDay !== 'number' || billingStartDay < 1 || billingStartDay > 28) {
-        return NextResponse.json({ error: 'billingStartDay must be a number between 1 and 28' }, { status: 400 });
+      if (typeof billingStartDay !== 'number' || billingStartDay < 1 || billingStartDay > 31) {
+        return NextResponse.json({ error: 'billingStartDay must be a number between 1 and 31' }, { status: 400 });
       }
     }
     if (manualVerificationEnabled !== undefined && typeof manualVerificationEnabled !== 'boolean') {

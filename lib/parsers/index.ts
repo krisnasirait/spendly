@@ -3,6 +3,7 @@ import { parseTokopediaEmail } from './tokopedia';
 import { parseTravelokaEmail } from './traveloka';
 import { parseBCAEmail } from './bca';
 import { parseAyoEmail } from './ayo';
+import { parseJagoEmail } from './jago';
 import type { Transaction } from '@/types';
 
 export interface ParsedEmail {
@@ -31,6 +32,9 @@ export function parseEmail(email: { subject: string; body: string; from: string 
   if (from.includes('ayo')) {
     return parseAyoEmail(email) as ParsedEmail | null;
   }
-  
+  if (from.includes('jago')) {
+    return parseJagoEmail(email) as ParsedEmail | null;
+  }
+
   return null;
 }

@@ -5,7 +5,7 @@ export interface Transaction {
   merchant: string;
   date: string;
   categories: string[];
-  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo';
+  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago';
   createdAt: string;
   messageId?: string;
 }
@@ -16,7 +16,7 @@ export interface PendingTransaction {
   amount: number;
   date: string;
   categories: string[];
-  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo';
+  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago';
   messageId: string;
   createdAt: string;
   status: 'pending';
