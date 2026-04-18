@@ -439,7 +439,9 @@ export default function SettingsPage() {
     fetch('/api/notifications/preferences')
       .then(res => res.json())
       .then(data => setNotificationPrefs(data))
-      .catch(() => {});
+      .catch((err) => {
+        console.error('Failed to load notification preferences:', err);
+      });
   }, []);
 
   useEffect(() => {
@@ -642,7 +644,7 @@ export default function SettingsPage() {
             <button
               onClick={async () => {
                 if (!('Notification' in window)) {
-                  alert('Your browser does not support notifications');
+                  console.warn('Browser does not support notifications');
                   return;
                 }
                 const permission = await Notification.requestPermission();
