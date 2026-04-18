@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useDevice } from '@/hooks/useDevice';
 import type { PendingTransaction } from '@/types';
 import { getCategoryColor } from '@/lib/category-colors';
 
@@ -282,6 +283,7 @@ export default function PendingPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [editingTx, setEditingTx] = useState<PendingTx | null>(null);
+  const { isMobile } = useDevice();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -324,7 +326,7 @@ export default function PendingPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <main style={{ padding: '32px 32px 48px' }}>
+      <main style={{ padding: isMobile ? '16px 16px 24px' : '32px 32px 48px' }}>
         <div className="skeleton" style={{ height: 36, width: 220, marginBottom: 24 }} />
         <div className="card">
           {[0,1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 44, marginBottom: 10 }} />)}
@@ -334,7 +336,12 @@ export default function PendingPage() {
   }
 
   return (
-    <main style={{ padding: '32px 32px 48px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <main style={{
+      padding: isMobile ? '16px 16px 24px' : '32px 32px 48px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: isMobile ? 16 : 24,
+    }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>Pending Transactions</h1>
@@ -350,12 +357,100 @@ export default function PendingPage() {
         </div>
       )}
 
-      <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
-        {transactions.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-            No pending transactions. All caught up!
-          </div>
-        ) : (
+      {transactions.length === 0 ? (
+        <div className="card fade-up" style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+          No pending transactions. All caught up!
+        </div>
+      ) : isMobile ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 0' }}>
+          {transactions.map((tx) => {
+            const badge = sourceBadge[tx.source] ?? { label: tx.source, color: '#6B7280', bg: '#F3F4F6' };
+            return (
+              <div key={tx.id} style={{
+                padding: 16,
+                background: 'var(--bg-surface)',
+                borderRadius: 12,
+                border: '1px solid var(--border)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <span style={{
+                        display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                        fontSize: 10, fontWeight: 600, background: badge.bg, color: badge.color,
+                      }}>{badge.label}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>{tx.merchant}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                      {tx.categories.map(cat => (
+                        <span key={cat} style={{
+                          display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                          fontSize: 10, fontWeight: 500,
+                          background: `${getCategoryColor(cat)}20`,
+                          color: getCategoryColor(cat),
+                        }}>
+                          {categoryLabel[cat] ?? cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--danger)' }}>
+                    -{fmt(tx.amount)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => handleAction(tx.id, 'approve')}
+                    disabled={actionLoading === tx.id}
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'var(--success, #22c55e)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {actionLoading === tx.id ? 'Approving…' : '✓ Approve'}
+                  </button>
+                  <button
+                    onClick={() => handleAction(tx.id, 'reject')}
+                    disabled={actionLoading === tx.id}
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderRadius: 8,
+                      border: '1.5px solid var(--danger)',
+                      background: 'transparent',
+                      color: 'var(--danger)',
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {actionLoading === tx.id ? 'Dismissing…' : '✗ Dismiss'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
@@ -444,8 +539,8 @@ export default function PendingPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {editingTx && (
         <EditPendingPanel
