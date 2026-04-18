@@ -404,13 +404,26 @@ export default function DashboardPage() {
 
   const firstName = session?.user?.name?.split(' ')[0] ?? 'there';
   const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 21 ? 'Good evening' : 'Good night';
 
   return (
     <>
       {showOnboarding && <OnboardingTour onComplete={completeOnboarding} />}
-    <main style={{ padding: '28px 32px 48px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <main style={{
+  padding: isMobile ? '16px 16px 24px' : '28px 32px 48px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: isMobile ? 16 : 24,
+}}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24 }}>
+      <div style={{
+  display: 'flex',
+  flexDirection: isMobile ? 'column' : 'row',
+  alignItems: isMobile ? 'stretch' : 'flex-start',
+  justifyContent: 'space-between',
+  gap: isMobile ? 12 : 24,
+}}>
         <div>
           <h1 style={{ 
             fontSize: 26, 
@@ -422,7 +435,7 @@ export default function DashboardPage() {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
           }}>
-            Good morning, {firstName}
+            {greeting}, {firstName}
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
             {todayStr} — track your spending with ease
@@ -430,33 +443,55 @@ export default function DashboardPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ 
-            display: 'flex', gap: 2,
-            background: 'var(--bg-surface)',
-            borderRadius: 'var(--radius-md)',
-            padding: 4,
-            border: '1px solid var(--border)',
-          }}>
-            {(['today', 'week', 'month', 'all'] as Period[]).map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: 8,
-                  border: 'none',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  background: period === p ? 'var(--accent)' : 'transparent',
-                  color: period === p ? '#fff' : 'var(--text-secondary)',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {p === 'today' ? 'Today' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All'}
-              </button>
-            ))}
-          </div>
+          {isMobile ? (
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as Period)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1.5px solid var(--border)',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              <option value="today">Today</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="all">All</option>
+            </select>
+          ) : (
+            <div style={{
+              display: 'flex', gap: 2,
+              background: 'var(--bg-surface)',
+              borderRadius: 'var(--radius-md)',
+              padding: 4,
+              border: '1px solid var(--border)',
+            }}>
+              {(['today', 'week', 'month', 'all'] as Period[]).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 8,
+                    border: 'none',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    background: period === p ? 'var(--accent)' : 'transparent',
+                    color: period === p ? '#fff' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {p === 'today' ? 'Today' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All'}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             id="scan-emails-btn"
             className="btn btn-primary"
@@ -475,7 +510,7 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       {loading ? <SkeletonCards /> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, }}>
           <StatCard
             label="Total Spend"
             value={fmt(currentTotal)}
@@ -508,7 +543,7 @@ export default function DashboardPage() {
       )}
 
       {/* Main content grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, }}>
         {/* Charts column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Money flow chart */}
@@ -542,7 +577,7 @@ export default function DashboardPage() {
                 No transaction data yet
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={180}>
+              <ResponsiveContainer width="100%" height={isMobile ? 160 : 180}>
                 <BarChart data={byMonth} barCategoryGap="30%" barGap={4}>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                   <YAxis hide />
@@ -600,7 +635,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={isMobile ? 160 : 140}>
                   <PieChart>
                     <Pie data={byCategory} dataKey="total" nameKey="cat" cx="50%" cy="50%"
                       innerRadius={42} outerRadius={62} paddingAngle={3}>
