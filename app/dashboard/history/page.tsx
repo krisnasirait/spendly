@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
+import { useDevice } from '@/hooks/useDevice';
 import type { Transaction } from '@/types';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
 import { getCategoryColor } from '@/lib/category-colors';
@@ -80,6 +81,7 @@ export default function HistoryPage() {
   const [deleting, setDeleting] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [recurringMerchants, setRecurringMerchants] = useState<Map<string, { frequency: string; avgAmount: number }>>(new Map());
+  const { isMobile } = useDevice();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -274,7 +276,12 @@ export default function HistoryPage() {
   }
 
   return (
-    <main style={{ padding: '32px 32px 48px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <main style={{
+  padding: isMobile ? '16px 16px 24px' : '32px 32px 48px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: isMobile ? 16 : 24,
+}}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
@@ -309,7 +316,13 @@ export default function HistoryPage() {
       </div>
 
       {/* Filter bar */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: 10,
+        flexWrap: 'wrap',
+        alignItems: 'center',
+      }}>
         <input
           id="history-search"
           placeholder="Search merchant…"
@@ -540,6 +553,98 @@ export default function HistoryPage() {
         {paged.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
             No transactions match your filters.
+          </div>
+        ) : isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
+            {paged.map((tx) => {
+              const badge = sourceBadge[tx.source] ?? { label: tx.source, color: '#6B7280', bg: '#F3F4F6' };
+              const isSelected = selected.has(tx.id);
+              return (
+                <div
+                  key={tx.id}
+                  onClick={() => setEditingTx(tx)}
+                  style={{
+                    padding: '14px 16px',
+                    background: isSelected ? 'var(--bg-page)' : 'var(--bg-surface)',
+                    borderLeft: isSelected ? '3px solid var(--accent)' : '3px solid transparent',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(tx.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ cursor: 'pointer', width: 18, height: 18 }}
+                      />
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                      {recurringMerchants.has(tx.merchant) && (
+                        <span style={{
+                          fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                          background: 'var(--accent-light)', color: 'var(--accent)',
+                        }}>
+                          🔄 {recurringMerchants.get(tx.merchant)?.frequency}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteTransaction(tx.id); }}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'var(--text-muted)', fontSize: 16, padding: 4,
+                        }}
+                        title="Delete"
+                      >
+                        ×
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditingTx(tx); }}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'var(--text-muted)', fontSize: 14, padding: 4,
+                        }}
+                        title="Edit"
+                      >
+                        ✎
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
+                        {tx.merchant}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {tx.categories.map(cat => (
+                          <span key={cat} style={{
+                            display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                            fontSize: 11, fontWeight: 500,
+                            background: `${getCategoryColor(cat)}20`,
+                            color: getCategoryColor(cat),
+                          }}>
+                            {categoryLabel[cat] ?? cat}
+                          </span>
+                        ))}
+                        <span style={{
+                          display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                          fontSize: 11, fontWeight: 600, background: badge.bg, color: badge.color,
+                        }}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--danger)', textAlign: 'right' }}>
+                      -{fmt(tx.amount)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
