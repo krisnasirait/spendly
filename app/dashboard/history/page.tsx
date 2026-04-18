@@ -277,6 +277,49 @@ export default function HistoryPage() {
           }}
         />
 
+        <button
+          onClick={() => {
+            const headers = ['Date', 'Merchant', 'Amount', 'Category', 'Source'];
+            const rows = filtered.map(tx => [
+              new Date(tx.date).toLocaleDateString('id-ID'),
+              `"${tx.merchant.replace(/"/g, '""')}"`,
+              tx.amount.toString(),
+              tx.categories.join('; '),
+              tx.source,
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const fromStr = dateRange.start.toISOString().split('T')[0];
+            const toStr = dateRange.end.toISOString().split('T')[0];
+            link.download = `spendly-transactions-${fromStr}-${toStr}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+          }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            border: '1.5px solid var(--border)',
+            background: 'var(--bg-surface)',
+            color: 'var(--text-primary)',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Export CSV
+        </button>
+
         <select id="history-filter-cat" value={filterCat} onChange={e => { setFilterCat(e.target.value); setPage(1); }}
           style={{
             padding: '10px 16px', borderRadius: 'var(--radius-pill)',
