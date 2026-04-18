@@ -678,7 +678,7 @@ export default function HistoryPage() {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleSelect(tx.id)}
+                          onChange={(e) => { e.stopPropagation(); toggleSelect(tx.id); }}
                           style={{ cursor: 'pointer', width: 16, height: 16 }}
                         />
                       </td>
@@ -725,14 +725,14 @@ export default function HistoryPage() {
                         -{fmt(tx.amount)}
                       </td>
                       <td>
-                        <button onClick={() => setEditingTx(tx)} style={{
+                        <button onClick={(e) => { e.stopPropagation(); setEditingTx(tx); }} style={{
                           background: 'none', border: 'none', cursor: 'pointer',
                           color: 'var(--text-muted)', fontSize: 14, padding: 4,
                         }} title="Edit">✎</button>
                       </td>
                       <td>
                         <button
-                          onClick={() => deleteTransaction(tx.id)}
+                          onClick={(e) => { e.stopPropagation(); deleteTransaction(tx.id); }}
                           disabled={deleting}
                           style={{
                             background: 'none', border: 'none', cursor: 'pointer',
