@@ -32,8 +32,12 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     fetch('/api/analytics')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
       .then(setData)
+      .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, []);
 
