@@ -178,14 +178,18 @@ function InsightCard({ insight }: { insight: Insight }) {
 }
 
 function SkeletonCards() {
+  const { isMobile } = useDevice();
   return (
-    <div style={{ display: 'flex', gap: 16 }}>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(160px, 1fr))',
+      gap: 16,
+    }}>
       {[0,1,2,3].map(i => (
-        <div key={i} className="card" style={{ flex: 1, height: 120 }}>
-          <div className="skeleton" style={{ height: 12, width: '50%', marginBottom: 16 }} />
-          <div className="skeleton" style={{ height: 28, width: '70%', marginBottom: 16 }} />
-          <div className="skeleton" style={{ height: 20, width: '40%', borderRadius: 'var(--radius-pill)' }} />
-        </div>
+        <div key={i} className="skeleton" style={{
+          height: isMobile ? 80 : 88,
+          borderRadius: 12,
+        }} />
       ))}
     </div>
   );

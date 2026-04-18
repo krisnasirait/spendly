@@ -328,9 +328,15 @@ export default function PendingPage() {
     return (
       <main style={{ padding: isMobile ? '16px 16px 24px' : '32px 32px 48px' }}>
         <div className="skeleton" style={{ height: 36, width: 220, marginBottom: 24 }} />
-        <div className="card">
-          {[0,1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 44, marginBottom: 10 }} />)}
-        </div>
+        {isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[0,1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 80, borderRadius: 12 }} />)}
+          </div>
+        ) : (
+          <div className="card">
+            {[0,1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 44, marginBottom: 10 }} />)}
+          </div>
+        )}
       </main>
     );
   }
