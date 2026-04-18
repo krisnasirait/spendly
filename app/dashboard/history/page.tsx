@@ -187,15 +187,21 @@ export default function HistoryPage() {
 
   async function handleBulkCategoryChange() {
     if (selected.size === 0 || !bulkCategory) return;
+    if (!confirm(`Change category to "${bulkCategory}" for ${selected.size} transaction(s)?`)) return;
     setBulkApplying(true);
     try {
       const ids = Array.from(selected);
+      const errors: string[] = [];
       for (const id of ids) {
-        await fetch(`/api/transactions?id=${id}`, {
+        const res = await fetch(`/api/transactions?id=${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, categories: [bulkCategory] }),
         });
+        if (!res.ok) errors.push(id);
+      }
+      if (errors.length > 0) {
+        throw new Error(`${errors.length} update(s) failed`);
       }
       setTransactions(prev =>
         prev.map(tx =>
@@ -206,6 +212,7 @@ export default function HistoryPage() {
       setBulkCategory('');
     } catch (error) {
       console.error('Bulk update failed:', error);
+      alert(error instanceof Error ? error.message : 'Bulk update failed');
     } finally {
       setBulkApplying(false);
     }
