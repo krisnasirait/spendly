@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { Transaction, Insight, Budget } from '@/types';
 import { BudgetOverview } from '@/components/dashboard/BudgetOverview';
@@ -256,6 +257,7 @@ export default function DashboardPage() {
     setScanning(true);
     await fetch('/api/emails/scan', { method: 'POST' });
     await loadData();
+    window.dispatchEvent(new Event('pending-count-refresh'));
     setScanning(false);
   }
 
@@ -492,6 +494,12 @@ export default function DashboardPage() {
               <div>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Money Flow</h2>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Monthly spending overview</p>
+                <Link href="/dashboard/analytics" style={{
+                  fontSize: 11, color: 'var(--accent)', fontWeight: 500,
+                  marginTop: 4, display: 'inline-block',
+                }}>
+                  View in Analytics →
+                </Link>
               </div>
               <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
