@@ -321,21 +321,85 @@ export default function HistoryPage() {
           {Object.keys(sourceBadge).map(k => <option key={k} value={k}>{sourceBadge[k].label}</option>)}
         </select>
 
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-page)', borderRadius: 'var(--radius-pill)', padding: 4 }}>
-          {(['today', 'week', 'month', 'all'] as string[]).map(p => (
-            <button
-              key={p}
-              onClick={() => { setPage(1); }}
-              style={{
-                padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: 'none',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                background: period === p ? 'var(--accent)' : 'transparent',
-                color: period === p ? '#fff' : 'var(--text-secondary)',
-              }}
-            >
-              {p === 'today' ? 'Today' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All'}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <select
+            value={QUICK_RANGES.findIndex(q => {
+              const v = q.getValue();
+              return v && v.start.getTime() === dateRange.start.getTime() && v.end.getTime() === dateRange.end.getTime();
+            }) >= 0 ? QUICK_RANGES.findIndex(q => {
+              const v = q.getValue();
+              return v && v.start.getTime() === dateRange.start.getTime() && v.end.getTime() === dateRange.end.getTime();
+            }) : -1}
+            onChange={(e) => {
+              const idx = Number(e.target.value);
+              if (idx === -1) {
+                setShowCustom(true);
+              } else {
+                const range = QUICK_RANGES[idx].getValue();
+                if (range) setDateRange(range);
+              }
+            }}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 8,
+              border: '1.5px solid var(--border)',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-primary)',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            <option value={0}>This Month</option>
+            <option value={1}>Last Month</option>
+            <option value={2}>Last 3 Months</option>
+            <option value={-1}>Custom</option>
+          </select>
+
+          {showCustom && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="date"
+                value={dateRange.start.toISOString().split('T')[0]}
+                onChange={(e) => setDateRange(prev => ({ ...prev, start: new Date(e.target.value) }))}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1.5px solid var(--border)',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                }}
+              />
+              <span style={{ color: 'var(--text-muted)' }}>to</span>
+              <input
+                type="date"
+                value={dateRange.end.toISOString().split('T')[0]}
+                onChange={(e) => setDateRange(prev => ({ ...prev, end: new Date(e.target.value) }))}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1.5px solid var(--border)',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                }}
+              />
+              <button
+                onClick={() => setShowCustom(false)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
