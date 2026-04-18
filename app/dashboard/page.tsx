@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import EditTransactionPanel from '@/components/EditTransactionPanel';
 import AddTransactionPanel from '@/components/AddTransactionPanel';
+import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { getCategoryColor } from '@/lib/category-colors';
 import { getBillingPeriod, isInBillingPeriod, getPreviousBillingPeriod } from '@/lib/billing-period';
 
@@ -220,6 +221,8 @@ export default function DashboardPage() {
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [billingStartDay, setBillingStartDay] = useState(1);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -248,6 +251,12 @@ export default function DashboardPage() {
         .then(r => r.json())
         .then(data => {
           if (data.billingStartDay) setBillingStartDay(data.billingStartDay);
+          if (data.hasSeenOnboarding !== undefined) {
+            setHasSeenOnboarding(data.hasSeenOnboarding);
+            if (!data.hasSeenOnboarding) {
+              setShowOnboarding(true);
+            }
+          }
         })
         .catch(() => {});
     }
@@ -260,6 +269,16 @@ export default function DashboardPage() {
     window.dispatchEvent(new Event('pending-count-refresh'));
     setScanning(false);
   }
+
+  const completeOnboarding = async () => {
+    await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hasSeenOnboarding: true }),
+    });
+    setShowOnboarding(false);
+    setHasSeenOnboarding(true);
+  };
 
   function handleSave(updated: Transaction) {
     setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
@@ -385,6 +404,8 @@ export default function DashboardPage() {
   const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
+    <>
+      {showOnboarding && <OnboardingTour onComplete={completeOnboarding} />}
     <main style={{ padding: '28px 32px 48px', display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24 }}>
@@ -776,5 +797,6 @@ export default function DashboardPage() {
         />
       )}
     </main>
+    </>
   );
 }
