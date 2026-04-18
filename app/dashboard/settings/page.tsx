@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Toast, ToastType } from '@/components/ui/Toast';
 import { SettingsSection } from '@/components/dashboard/SettingsSection';
+import { useDevice } from '@/hooks/useDevice';
 
 const SOURCES = [
   { key: 'shopee',    label: 'Shopee',    query: 'from:shopee' },
@@ -412,6 +413,7 @@ export default function SettingsPage() {
     weeklySummary: boolean;
     recurringReminders: boolean;
   } | null>(null);
+  const { isMobile } = useDevice();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -495,7 +497,13 @@ export default function SettingsPage() {
   const avatarInitial = userEmail ? userEmail[0]?.toUpperCase() : '?';
 
   return (
-    <main style={{ padding: '32px', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <main style={{
+      padding: isMobile ? '16px 16px 24px' : '32px',
+      maxWidth: isMobile ? '100%' : 640,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: isMobile ? 20 : 24,
+    }}>
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>Settings</h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>Manage your account and email sources</p>
@@ -530,7 +538,7 @@ export default function SettingsPage() {
         title="Email Sources"
         description="Choose which merchants to scan for transactions"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap', gap: 8 }}>
           {SOURCES.map(({ key, label, query }) => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
@@ -555,10 +563,11 @@ export default function SettingsPage() {
             border: '1.5px solid var(--border)',
             background: 'var(--bg-surface)',
             color: 'var(--text-primary)',
-            fontSize: 13,
+            fontSize: isMobile ? 15 : 14,
             cursor: 'pointer',
             width: '100%',
             maxWidth: 200,
+            height: isMobile ? 48 : 40,
           }}
         >
           {PERIODS.map(({ value, label }) => (
@@ -581,7 +590,8 @@ export default function SettingsPage() {
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 10,
               border: '1.5px solid var(--border)', background: 'var(--bg-page)',
-              fontSize: 14, color: 'var(--text-primary)', outline: 'none',
+              fontSize: isMobile ? 15 : 14, color: 'var(--text-primary)', outline: 'none',
+              height: isMobile ? 48 : 40,
             }}
           />
         </div>
@@ -604,9 +614,9 @@ export default function SettingsPage() {
             <button
               onClick={() => saveSettings({ ...settings, manualVerificationEnabled: !settings.manualVerificationEnabled })}
               style={{
-                width: 48,
-                height: 26,
-                borderRadius: 13,
+                width: isMobile ? 56 : 48,
+                height: isMobile ? 48 : 26,
+                borderRadius: isMobile ? 14 : 13,
                 background: settings.manualVerificationEnabled ? 'var(--accent)' : 'var(--border)',
                 border: 'none',
                 cursor: 'pointer',
@@ -616,13 +626,13 @@ export default function SettingsPage() {
               }}
             >
               <div style={{
-                width: 22,
-                height: 22,
+                width: isMobile ? 26 : 22,
+                height: isMobile ? 26 : 22,
                 borderRadius: '50%',
                 background: '#fff',
                 position: 'absolute',
-                top: 2,
-                left: settings.manualVerificationEnabled ? 24 : 2,
+                top: isMobile ? 11 : 2,
+                left: settings.manualVerificationEnabled ? (isMobile ? 28 : 24) : (isMobile ? 2 : 2),
                 transition: 'left 0.2s',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
               }} />
@@ -659,9 +669,9 @@ export default function SettingsPage() {
                 }
               }}
               style={{
-                width: 44,
-                height: 24,
-                borderRadius: 12,
+                width: isMobile ? 52 : 44,
+                height: isMobile ? 48 : 24,
+                borderRadius: isMobile ? 14 : 12,
                 border: 'none',
                 background: notificationPrefs?.enabled ? 'var(--accent)' : 'var(--border)',
                 cursor: 'pointer',
@@ -670,13 +680,13 @@ export default function SettingsPage() {
               }}
             >
               <div style={{
-                width: 20,
-                height: 20,
+                width: isMobile ? 24 : 20,
+                height: isMobile ? 24 : 20,
                 borderRadius: '50%',
                 background: '#fff',
                 position: 'absolute',
-                top: 2,
-                left: notificationPrefs?.enabled ? 22 : 2,
+                top: isMobile ? 12 : 2,
+                left: notificationPrefs?.enabled ? (isMobile ? 26 : 22) : (isMobile ? 2 : 2),
                 transition: 'left 0.2s',
               }} />
             </button>
