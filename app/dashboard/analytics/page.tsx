@@ -23,6 +23,8 @@ interface AnalyticsData {
   }>;
   velocity: { currentPace: number; lastMonthPace: number; deltaPercent: number };
   thisMonth: { total: number; vsLastMonth: number; trend: 'up' | 'down' | 'same' };
+  recurring: Array<{ merchant: string; frequency: string; avgAmount: number; occurrences: number }>;
+  totalMonthlyRecurring: number;
 }
 
 export default function AnalyticsPage() {
@@ -39,6 +41,13 @@ export default function AnalyticsPage() {
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
+
+    fetch('/api/recurring')
+      .then(res => res.json())
+      .then(data => {
+        setData(prev => prev ? { ...prev, recurring: data.recurring, totalMonthlyRecurring: data.totalMonthlyRecurring } : null);
+      })
+      .catch(() => {});
   }, []);
 
   const filteredTrend = data?.monthlyTrend.slice(-(period === '1Y' ? 12 : period === '6M' ? 6 : 3)) || [];
@@ -196,6 +205,45 @@ export default function AnalyticsPage() {
               </div>
             </div>
           )}
+
+          {/* Recurring Summary Card */}
+          <div className="card" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>
+              Recurring Payments
+            </h3>
+            {data?.recurring && data.recurring.length > 0 ? (
+              <>
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+                    Monthly Total
+                  </p>
+                  <p style={{ fontSize: 24, fontWeight: 800 }}>
+                    {fmt(data.totalMonthlyRecurring)}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {data.recurring.slice(0, 5).map(r => (
+                    <div key={r.merchant} style={{
+                      display: 'flex', justifyContent: 'space-between',
+                      padding: '8px 0', borderBottom: '1px solid var(--border)',
+                    }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 500 }}>{r.merchant}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          {r.frequency} · {r.occurrences}x
+                        </p>
+                      </div>
+                      <p style={{ fontSize: 13, fontWeight: 600 }}>{fmtShort(r.avgAmount)}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                No recurring payments detected yet
+              </p>
+            )}
+          </div>
         </div>
       ) : null}
 
