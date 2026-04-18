@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useDevice } from '@/hooks/useDevice';
 
 interface TourStep {
   title: string;
@@ -32,6 +33,7 @@ interface OnboardingTourProps {
 
 export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const { isMobile } = useDevice();
 
   const step = TOUR_STEPS[currentStep];
   const isLast = currentStep === TOUR_STEPS.length - 1;
@@ -73,8 +75,8 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
         style={{
           background: 'var(--bg-surface)',
           borderRadius: 16,
-          padding: 24,
-          maxWidth: 400,
+          padding: isMobile ? '24px 20px' : 24,
+          maxWidth: isMobile ? '100%' : 400,
           width: '90%',
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
         }}
@@ -87,13 +89,13 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: isMobile ? 10 : 6 }}>
             {TOUR_STEPS.map((_, i) => (
               <div
                 key={i}
                 style={{
-                  width: 8,
-                  height: 8,
+                  width: isMobile ? 12 : 8,
+                  height: isMobile ? 12 : 8,
                   borderRadius: '50%',
                   background: i === currentStep ? 'var(--accent)' : 'var(--border)',
                 }}
@@ -107,12 +109,12 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-page)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               style={{
-                padding: '8px 16px',
+                padding: isMobile ? '12px 16px' : '8px 16px',
                 borderRadius: 8,
                 border: '1px solid var(--border)',
                 background: 'transparent',
                 color: 'var(--text-muted)',
-                fontSize: 13,
+                fontSize: isMobile ? 14 : 13,
                 cursor: 'pointer',
                 transition: 'background 0.15s',
               }}
@@ -124,12 +126,14 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
               onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
               style={{
-                padding: '8px 16px',
-                borderRadius: 8,
+                width: isMobile ? '100%' : 'auto',
+                height: isMobile ? 48 : undefined,
+                padding: isMobile ? '0 24px' : '8px 16px',
+                borderRadius: isMobile ? 12 : 8,
                 border: 'none',
                 background: 'var(--accent)',
                 color: '#fff',
-                fontSize: 13,
+                fontSize: isMobile ? 16 : 13,
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'opacity 0.15s',
