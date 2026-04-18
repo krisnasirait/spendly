@@ -28,6 +28,9 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
   const [showCreate, setShowCreate] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [categorySuggestion, setCategorySuggestion] = useState<string | null>(null);
+
+  let merchantTimeout: NodeJS.Timeout | null = null;
 
   useEffect(() => {
     setCategoriesLoading(true);
@@ -136,11 +139,65 @@ export default function EditTransactionPanel({ transaction, onClose, onSave }: E
           {/* Merchant */}
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Merchant</label>
-            <input value={merchant} onChange={e => setMerchant(e.target.value)} style={{
+            <input value={merchant} onChange={(e) => {
+              const value = e.target.value;
+              setMerchant(value);
+              if (merchantTimeout) clearTimeout(merchantTimeout);
+              if (value.length >= 3) {
+                merchantTimeout = setTimeout(async () => {
+                  try {
+                    const res = await fetch(`/api/merchants/suggest?merchant=${encodeURIComponent(value)}`);
+                    const data = await res.json();
+                    if (data.suggestion && data.count >= 2) {
+                      setCategorySuggestion(data.suggestion);
+                    } else {
+                      setCategorySuggestion(null);
+                    }
+                  } catch {
+                    setCategorySuggestion(null);
+                  }
+                }, 300);
+              } else {
+                setCategorySuggestion(null);
+              }
+            }} style={{
               width: '100%', padding: '10px 14px', borderRadius: 10,
               border: '1.5px solid var(--border)', background: 'var(--bg-page)',
               fontSize: 14, color: 'var(--text-primary)', outline: 'none',
             }} />
+            {categorySuggestion && (
+              <div style={{
+                marginTop: 8,
+                padding: '8px 12px',
+                background: 'var(--accent-light)',
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+                <span style={{ fontSize: 12, color: 'var(--accent)' }}>
+                  Based on history: {categorySuggestion}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategories([categorySuggestion]);
+                    setCategorySuggestion(null);
+                  }}
+                  style={{
+                    fontSize: 11,
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    border: 'none',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Amount */}
