@@ -79,6 +79,7 @@ export default function HistoryPage() {
   const [bulkApplying, setBulkApplying] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [recurringMerchants, setRecurringMerchants] = useState<Map<string, { frequency: string; avgAmount: number }>>(new Map());
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/signin');
@@ -96,6 +97,16 @@ export default function HistoryPage() {
         .then(r => r.json())
         .then(data => {
           if (data.billingStartDay) setBillingStartDay(data.billingStartDay);
+        })
+        .catch(() => {});
+      fetch('/api/recurring')
+        .then(res => res.json())
+        .then(data => {
+          const map = new Map<string, { frequency: string; avgAmount: number }>();
+          data.recurring.forEach((r: { merchant: string; frequency: string; avgAmount: number }) => {
+            map.set(r.merchant, { frequency: r.frequency, avgAmount: r.avgAmount });
+          });
+          setRecurringMerchants(map);
         })
         .catch(() => {});
     }
@@ -569,7 +580,22 @@ export default function HistoryPage() {
                       <td style={{ color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>
                         {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
-                      <td style={{ fontWeight: 500 }}>{tx.merchant}</td>
+                      <td style={{ fontWeight: 500 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>{tx.merchant}</span>
+                          {recurringMerchants.has(tx.merchant) && (
+                            <span style={{
+                              fontSize: 10,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              background: 'var(--accent-light)',
+                              color: 'var(--accent)',
+                            }}>
+                              🔄 {recurringMerchants.get(tx.merchant)?.frequency}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td>
                         <span style={{
                           display: 'inline-block', padding: '3px 10px', borderRadius: 999,
