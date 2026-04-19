@@ -21,15 +21,15 @@ The current spendly system has 7 hardcoded regex-based parsers (Shopee, Tokopedi
 ```
 Email
   ↓
-Parser Registry (scored plugin matching)
+Parser Registry (scored plugin matching with specificity rewards)
   ↓
 Parser Plugin (versioned, multi-strategy extraction)
   ↓
 ParsedResult (with extraction_log)
   ↓
-Merchant Normalization
+Merchant Normalization (robust, includes-based alias matching)
   ↓
-Deduplication Check
+Deduplication Check (collision-resistant key)
   ↓
 Structured Transaction (amount, merchant, date, raw_source, merchant_normalized)
   ↓
@@ -39,7 +39,7 @@ Categorization Pipeline
   ├─ KeywordScorer
   └─ DefaultFallback (lowest priority)
   ↓
-Final Output {category, confidence, source}
+Final Output {category, confidence, source, reason}
   ↓
 Confidence Threshold Gate
   ├─ confidence >= 0.6 → status: "approved"
@@ -88,8 +88,9 @@ interface ParserPlugin {
 
 interface ExtractionStrategy {
   type: 'regex' | 'xpath' | 'keyword_proximity';
-  pattern?: string;               // Regex or xpath
-  fallback?: string;              // Keyword for proximity search
+  pattern?: string;               // Primary regex or xpath
+  proximity_window?: number;       // For keyword_proximity: chars around keyword (default: 50)
+  secondary_pattern?: string;      // For keyword_proximity: regex inside window
   transform?: string;             // e.g., "parse_currency_idr"
   default?: any;
 }
@@ -105,7 +106,7 @@ interface ValidationRule {
 }
 ```
 
-### Plugin Matching with Scoring
+### Plugin Matching with Specificity Scoring
 
 ```typescript
 interface MatchedPlugin {
@@ -120,23 +121,42 @@ interface MatchedPlugin {
 
 function scorePlugin(plugin: ParserPlugin, email: Email): number {
   let score = 0;
+  const emailFrom = email.from.toLowerCase();
+  const emailSubject = email.subject.toLowerCase();
 
-  // Exact from match = +10, wildcard = +5
+  // From pattern matching (reward specificity)
   for (const pattern of plugin.match.from_patterns) {
-    if (pattern.includes('*')) {
-      score += 5;
-    } else if (email.from.toLowerCase().includes(pattern.toLowerCase())) {
+    const patternLower = pattern.toLowerCase();
+
+    if (patternLower === emailFrom) {
+      // Exact email match
+      score += 15;
+    } else if (patternLower.startsWith('@') && emailFrom.endsWith(patternLower)) {
+      // Exact domain match (e.g., "@bca.co.id")
       score += 10;
+    } else if (patternLower.includes('*')) {
+      // Wildcard match
+      score += 5;
     }
   }
 
-  // Subject match = +3 per pattern
+  // Subject pattern matching
   if (plugin.match.subject_patterns) {
     for (const pattern of plugin.match.subject_patterns) {
-      if (email.subject.toLowerCase().includes(pattern.toLowerCase().replace(/\*/g, ''))) {
-        score += 3;
+      const patternClean = pattern.toLowerCase().replace(/\*/g, '');
+      if (emailSubject === patternClean) {
+        // Exact subject match
+        score += 5;
+      } else if (emailSubject.includes(patternClean)) {
+        // Fuzzy subject match
+        score += 2;
       }
     }
+  }
+
+  // Penalize overly broad plugins (3+ from patterns = catch-all risk)
+  if (plugin.match.from_patterns.length > 3) {
+    score -= 2;
   }
 
   return score;
@@ -163,13 +183,62 @@ Each field tries strategies in order until one succeeds:
 ```
 1. regex → matches → transform → validate → done
 2. xpath → matches → transform → validate → done
-3. keyword_proximity → finds nearest keyword → extract nearby value → validate → done
+3. keyword_proximity:
+   a. find keyword index in text
+   b. extract ±window characters (default 50)
+   c. apply secondary_pattern regex inside window (if provided)
+   d. validate → done
 4. default value → use default (skip validation)
 ```
 
 **Multiple match behavior:** First successful strategy wins (ordered list).
 
 **No match behavior:** Field is `null`, extraction log records "no match".
+
+### ParsedResult Status Definitions
+
+```typescript
+// ParsedResult.status values:
+type ParsingStatus =
+  | 'success'    // All required fields extracted and validated
+  | 'partial'   // At least 1 required field missing/invalid, but some data extracted
+  | 'failed';   // No fields extracted OR critical validation failure
+
+// Required fields: amount, date
+// Non-required fields: merchant (can default to source name)
+```
+
+**Partial handling:** Store partial transactions with status='failed', allow reprocessing later.
+
+### keyword_proximity Extraction (Concrete Definition)
+
+```typescript
+function extractKeywordProximity(
+  text: string,
+  keyword: string,
+  window: number = 50,
+  secondaryPattern?: string
+): string | null {
+  const lowerText = text.toLowerCase();
+  const keywordIndex = lowerText.indexOf(keyword.toLowerCase());
+
+  if (keywordIndex === -1) return null;
+
+  // Extract window around keyword
+  const start = Math.max(0, keywordIndex - window);
+  const end = Math.min(text.length, keywordIndex + keyword.length + window);
+  const windowText = text.slice(start, end);
+
+  // If secondary pattern provided, apply it
+  if (secondaryPattern) {
+    const match = windowText.match(new RegExp(secondaryPattern));
+    return match ? match[1]?.trim() : null;
+  }
+
+  // Otherwise, return the window text (caller should apply further extraction)
+  return windowText.trim();
+}
+```
 
 ### ParsedResult with Metadata
 
@@ -179,8 +248,9 @@ interface ParsedResult {
   plugin_id: string;
   plugin_version: string;
   extraction_log: ExtractionLogEntry[];  // For debugging
-  status: 'success' | 'partial' | 'failed';
+  status: ParsingStatus;
   errors?: string[];
+  retry_count: number;                   // Track retry attempts
 }
 
 interface ExtractionLogEntry {
@@ -222,6 +292,8 @@ interface ExtractionLogEntry {
       },
       {
         "type": "keyword_proximity",
+        "proximity_window": 50,
+        "secondary_pattern": "Merchant[^:]*:\\s*(.+)",
         "fallback": "Merchant"
       }
     ],
@@ -251,7 +323,25 @@ class ParserRegistry {
   findBestMatcher(email: Email): MatchedPlugin | null;
   getVersionedPlugin(id: string, version: string): ParserPlugin | null;
   getAllVersions(id: string): ParserPlugin[];
+  getCurrentVersion(id: string): ParserPlugin | null;
 }
+```
+
+### Retry Strategy
+
+```typescript
+const MAX_RETRY_ATTEMPTS = 3;
+
+interface RetryConfig {
+  maxAttempts: number;           // Default: 3
+  backoffMs: number;             // Initial backoff: 1000ms
+  backoffMultiplier: number;     // 2x per retry
+}
+
+// On parsing failure:
+// 1. If retry_count < maxAttempts: re-queue with exponential backoff
+// 2. If retry_count >= maxAttempts: mark as 'failed', stop retrying
+// 3. Failed parses eligible for reprocessing when parser is updated
 ```
 
 ---
@@ -268,12 +358,13 @@ const NOISE_PATTERNS = [
   /^ud\.?\s*/i,
 ];
 
-const ALIAS_MAP: Record<string, string> = {
-  'gojek': 'gojek',
-  'go-jek': 'gojek',
-  'grab': 'grab',
-  'grabtaxi': 'grab',
-};
+const ALIAS_RULES: Array<{ pattern: RegExp, replacement: string }> = [
+  { pattern: /go[- ]?jek/i, replacement: 'gojek' },
+  { pattern: /grab[- ]?(?:taxi|f?ood)?/i, replacement: 'grab' },
+  { pattern: /maxim\s*(?:taxi)?/i, replacement: 'maxim' },
+  { pattern: /tiket\.?com/i, replacement: 'tiketcom' },
+  { pattern: /traveloka/i, replacement: 'traveloka' },
+];
 
 function normalizeMerchant(raw: string): string {
   let normalized = raw
@@ -287,8 +378,12 @@ function normalizeMerchant(raw: string): string {
     normalized = normalized.replace(pattern, '');
   }
 
-  // Apply aliases
-  normalized = ALIAS_MAP[normalized] || normalized;
+  // Apply alias rules (substring matching for robustness)
+  for (const rule of ALIAS_RULES) {
+    if (rule.pattern.test(normalized)) {
+      normalized = normalized.replace(rule.pattern, rule.replacement);
+    }
+  }
 
   return normalized;
 }
@@ -298,25 +393,30 @@ This normalized form is used for:
 - User learning matching
 - Merchant rule matching
 - Keyword scoring input
+- Dedup key generation
 
 ---
 
 ## Deduplication Strategy
 
-### Dedup Key Generation
+### Collision-Resistant Dedup Key Generation
 
 ```typescript
 function generateDedupKey(tx: {
   source: string;
   source_reference_id?: string;
+  merchant_normalized: string;
   amount: number;
-  date: string;
+  date: string;           // ISO date
+  subject_snippet: string; // First 50 chars of email subject
 }): string {
   const data = [
     tx.source,
     tx.source_reference_id || '',
+    tx.merchant_normalized,
     tx.amount.toString(),
     tx.date.split('T')[0],  // Use date only, not time
+    tx.subject_snippet.slice(0, 50),
   ].join('|');
 
   return hashSha256(data);
@@ -336,15 +436,14 @@ ELSE:
 
 ## Categorization System
 
-### Confidence Output
-
-All categorization outputs include confidence:
+### Confidence Output with Explainability
 
 ```typescript
 interface CategorizationResult {
   category: string;              // e.g., "food", "transport"
   confidence: number;            // 0.0 - 1.0
   source: 'user_learning' | 'merchant_rule' | 'keyword_score' | 'default';
+  reason?: string;              // NEW: human-readable explanation
   alternatives?: {               // Top 2-3 alternatives
     category: string;
     confidence: number;
@@ -356,6 +455,11 @@ interface CategorizationOutput {
   status: 'approved' | 'pending';  // Based on confidence threshold
 }
 ```
+
+**Reason examples:**
+- `"matched user rule: 'gojek' → transport (5 confirmations)"`
+- `"matched global rule: 'grab' → transport (confidence: 0.85)"`
+- `"keyword match: 'restaurant' (+2.0), 'cafe' (+1.5) → food"`
 
 ### Confidence Threshold Gate
 
@@ -377,13 +481,16 @@ interface UserLearningEntry {
   merchant_pattern: string;       // e.g., "gojek", "*tiket.com*"
   merchant_normalized: string;    // Pre-computed normalized form
   category: string;
-  confidence_override?: number;  // User can say "always use this"
+  confidence_override?: number;   // User can say "always use this"
   usage_count: number;           // Track confirmations for rate limiting
   created_at: Date;
   updated_at: Date;
 }
 
-// Matching: normalized merchant name or wildcard pattern
+// Matching rules:
+// - Exact normalized match preferred
+// - Contains match (merchant contains pattern) allowed as fallback
+// - Wildcard patterns: max 1 wildcard per pattern (e.g., "*tiket.com*" OK, "*foo*bar*" NOT OK)
 // Confidence: 0.95 (user ground truth), or confidence_override if set
 // Rate limiting: apply only if usage_count >= 2 (prevents one-off errors)
 ```
@@ -457,7 +564,8 @@ function categorize(
       result: {
         category: userMatch.category,
         confidence,
-        source: 'user_learning'
+        source: 'user_learning',
+        reason: `matched user rule: '${userMatch.merchant_pattern}' → ${userMatch.category} (${userMatch.usage_count} confirmations)`
       },
       status: determineStatus(confidence)
     };
@@ -469,7 +577,8 @@ function categorize(
     const result: CategorizationResult = {
       category: ruleMatch.category,
       confidence: ruleMatch.confidence,
-      source: 'merchant_rule'
+      source: 'merchant_rule',
+      reason: `matched global rule: '${ruleMatch.matchedPattern}' → ${ruleMatch.category} (confidence: ${ruleMatch.confidence})`
     };
     return { result, status: determineStatus(ruleMatch.confidence) };
   }
@@ -481,6 +590,7 @@ function categorize(
       category: scores.topCategory,
       confidence: scores.normalizedConfidence,
       source: 'keyword_score',
+      reason: `keyword match: ${scores.topKeywords.join(', ')} → ${scores.topCategory}`,
       alternatives: scores.alternatives
     };
     return { result, status: determineStatus(scores.normalizedConfidence) };
@@ -490,7 +600,8 @@ function categorize(
   const sourceDefault = SOURCE_DEFAULTS[tx.source] || { category: 'other', confidence: 0.1 };
   const result: CategorizationResult = {
     ...sourceDefault,
-    source: 'default'
+    source: 'default',
+    reason: `source default: ${tx.source} → ${sourceDefault.category}`
   };
   return { result, status: determineStatus(sourceDefault.confidence) };
 }
@@ -540,16 +651,19 @@ interface Transaction {
   id: string;
   userId: string;
   amount: number;
+  currency: string;              // NEW: 'IDR' | 'USD', default 'IDR'
   merchant: string;
   merchant_normalized: string;    // NEW: pre-computed
   date: string;
-  categories: string[];            // Single category for now
-  category_confidence: number;     // NEW: confidence score
+  category: string;               // FIXED: single category (not array)
+  category_confidence: number;    // NEW: confidence score
   category_source: string;        // NEW: 'user_learning' | 'merchant_rule' | etc
+  category_reason?: string;       // NEW: explainability
   source: TransactionSource;
-  parser_id: string;               // NEW: parser used
-  parser_version: string;          // NEW: version used
-  dedup_key: string;               // NEW: deduplication
+  parser_id: string;              // NEW: parser used
+  parser_version: string;         // NEW: version used
+  dedup_key: string;              // NEW: deduplication
+  parsing_status: ParsingStatus; // NEW: 'success' | 'partial' | 'failed'
   messageId?: string;
   createdAt: string;
 }
@@ -574,11 +688,13 @@ interface Transaction {
     id: string;
     merchant: string;
     amount: number;
+    currency: string;
     date: string;
     categorization: {
       category: string;
       confidence: number;
       source: string;
+      reason?: string;
     };
     status: 'approved' | 'pending';
   }>;
@@ -592,7 +708,7 @@ interface Transaction {
 // Request: { transactionIds?: string[], reprocessFailed?: boolean }
 // Behavior:
 //   - If transactionIds provided: reprocess those specifically
-//   - If reprocessFailed true: reprocess all with status 'failed'
+//   - If reprocessFailed true: reprocess all with parsing_status = 'failed'
 //   - Only reprocess if parser_version_used !== current_version
 // Response: { reprocessed: number, results: [...] }
 ```
@@ -629,16 +745,18 @@ interface Transaction {
 
 ### Phase 1: Parser Plugin System (Foundation)
 - [ ] Plugin interface and registry
-- [ ] Plugin matching with scoring + priority
+- [ ] Plugin matching with specificity scoring + penalty for broad plugins
 - [ ] Migrate existing parsers to plugin format
-- [ ] Multi-strategy extraction support
+- [ ] Multi-strategy extraction with concrete keyword_proximity definition
 - [ ] Validation rules per field
 - [ ] Extraction logging
 - [ ] Plugin storage in Firestore
-- [ ] Merchant normalization pipeline
+- [ ] Merchant normalization pipeline with robust alias matching
+- [ ] Retry strategy with max_retry_attempts = 3
 
 ### Phase 2: Categorization Pipeline
-- [ ] CategorizationResult interface
+- [ ] CategorizationResult with reason explainability
+- [ ] UserLearningMatcher with wildcard constraint (max 1 per pattern)
 - [ ] UserLearningMatcher with rate limiting (usage_count >= 2)
 - [ ] MerchantRuleMatcher with normalized matching
 - [ ] KeywordScorer with improved confidence formula
@@ -647,9 +765,10 @@ interface Transaction {
 - [ ] Alternatives in output
 
 ### Phase 3: Deduplication & Data Quality
-- [ ] Dedup key generation
+- [ ] Collision-resistant dedup key (includes merchant_normalized + subject_snippet)
 - [ ] Dedup check before insert
 - [ ] Parser version tracking per transaction
+- [ ] Parsing status tracking ('success' | 'partial' | 'failed')
 - [ ] Reprocessing API
 
 ### Phase 4: Learning Loop
@@ -684,6 +803,10 @@ interface Transaction {
    - Optional + user-triggered via `/api/transactions/reprocess`
    - Background reprocess for *failed parses only*
 
+5. **Wildcard constraints**: Max 1 wildcard per user learning pattern.
+
+6. **Partial transaction handling**: Store with `parsing_status='failed'`, eligible for reprocessing.
+
 ---
 
 ## Alternatives Considered
@@ -699,3 +822,28 @@ interface Transaction {
 
 ### Original Keyword Scorer Formula
 **Fixed**: Original `confidence = top_score / (top_score + 1.0)` ignored second-best category. New formula `confidence = top_score / (top_score + second_score + 0.5)` properly reflects ambiguity.
+
+### Original Dedup Key
+**Fixed**: Original `source + source_reference_id + amount + date` created false positives. New key adds `merchant_normalized + subject_snippet` for collision resistance.
+
+### Original Plugin Scoring
+**Fixed**: Original `exact=+10, wildcard=+5` didn't reward specificity. New scoring: exact email=+15, exact domain=+10, wildcard=+5, exact subject=+5, fuzzy subject=+2, with broad plugin penalty (-2 if >3 from patterns).
+
+---
+
+## Test Cases Required (Next Step)
+
+Before implementation, prepare 10-15 real email test cases covering:
+
+1. Standard transactions per source (Happy path)
+2. Edge cases: same-day same-amount multiple transactions
+3. Edge cases: unusual merchant names with noise (PT, TBK, etc.)
+4. Edge cases: currency variations (Rp, IDR, USD)
+5. Edge cases: malformed emails (missing fields)
+6. Edge cases: new/unknown merchants
+7. Edge cases: multiple parsers matching same email (scoring tie-breaker)
+8. Categorization: ambiguous transactions (could be food OR transport)
+9. Categorization: low confidence scenarios
+10. Deduplication: forwarded emails, re-fetched emails
+
+Indonesian banking + e-commerce specific cases critical for this domain.
