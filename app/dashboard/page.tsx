@@ -697,7 +697,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', maxHeight: 280 }}>
-                {insights.map((ins) => <InsightCard key={ins.id} insight={ins} />)}
+                {insights.map((ins, i) => <InsightCard key={ins.id ?? i} insight={ins} />)}
               </div>
             )}
             {!loading && insights.length > 0 && (

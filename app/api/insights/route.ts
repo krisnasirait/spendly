@@ -7,8 +7,8 @@ import type { Insight, Transaction, Budget } from '@/types';
 const fmt = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
-function generateInsights(transactions: Transaction[], budgets: Budget[]): Partial<Insight>[] {
-  const insights: Partial<Insight>[] = [];
+function generateInsights(transactions: Transaction[], budgets: Budget[], userId: string): Insight[] {
+  const insights: Insight[] = [];
   const now = new Date();
   
   const thisWeekStart = new Date(now);
@@ -39,6 +39,8 @@ function generateInsights(transactions: Transaction[], budgets: Budget[]): Parti
     
     if (spent > budget.amount) {
       insights.push({
+        id: crypto.randomUUID(),
+        userId,
         type: 'budget_alert',
         text: `⚠️ ${category} budget exceeded by ${fmt(spent - budget.amount)}`,
         severity: pct > 150 ? 'high' : 'medium',
@@ -47,6 +49,8 @@ function generateInsights(transactions: Transaction[], budgets: Budget[]): Parti
       });
     } else if (pct >= 90) {
       insights.push({
+        id: crypto.randomUUID(),
+        userId,
         type: 'budget_alert',
         text: `⚠️ ${category} at ${pct.toFixed(0)}% of budget`,
         severity: 'medium',
@@ -74,6 +78,8 @@ function generateInsights(transactions: Transaction[], budgets: Budget[]): Parti
     const avg = merchantAvgMap.get(tx.merchant);
     if (avg && tx.amount > avg * 2) {
       insights.push({
+        id: crypto.randomUUID(),
+        userId,
         type: 'unusual_tx',
         text: `📈 ${tx.merchant} charge ${fmt(tx.amount)} (${(tx.amount / avg).toFixed(1)}x your usual)`,
         severity: 'high',
@@ -100,6 +106,8 @@ function generateInsights(transactions: Transaction[], budgets: Budget[]): Parti
 
   if (avgWeekly > 0 && thisWeekTotal > avgWeekly * 1.5) {
     insights.push({
+      id: crypto.randomUUID(),
+      userId,
       type: 'spike',
       text: `📈 Spending spike: ${fmt(thisWeekTotal)} this week vs ${fmt(avgWeekly)} avg`,
       severity: 'high',
@@ -122,6 +130,8 @@ function generateInsights(transactions: Transaction[], budgets: Budget[]): Parti
       
       if (pct < 60) {
         insights.push({
+          id: crypto.randomUUID(),
+          userId,
           type: 'encouragement',
           text: `🎉 ${category} only ${pct.toFixed(0)}% used - saving ${fmt(budget.amount - spent)}!`,
           severity: 'low',
@@ -163,7 +173,7 @@ export async function GET() {
     isManual: doc.data().isManual || false,
   }));
 
-  const insights = generateInsights(transactions, budgets);
+  const insights = generateInsights(transactions, budgets, userId);
 
   return NextResponse.json({ insights });
 }
