@@ -136,7 +136,7 @@ export async function POST() {
           amount: parsed.data.amount as number,
           currency: parsed.data.currency,
           merchant: parsed.data.merchant as string,
-          merchant_normalized: parsed.data.merchant_normalized,
+          merchant_normalized: parsed.data.merchant_normalized ?? undefined,
           date: parsed.data.date as string,
           category: categorization.result.category,
           category_confidence: categorization.result.confidence,
