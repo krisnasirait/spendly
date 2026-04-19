@@ -13,7 +13,7 @@ export function createGmailClient(accessToken: string): Auth.OAuth2Client {
 export async function fetchTransactionEmails(auth: Auth.OAuth2Client) {
   const gmail = google.gmail({ version: 'v1', auth });
   
-  const query = 'from:shopee OR from:tokopedia OR from:traveloka OR from:bca OR from:ayo OR from:jago newer_than:30d';
+  const query = 'from:shopee OR from:tokopedia OR from:traveloka OR from:bca OR from:ayo OR from:jago OR from:bni newer_than:30d';
   
   const response = await gmail.users.messages.list({
     userId: 'me',

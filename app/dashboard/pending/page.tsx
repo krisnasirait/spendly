@@ -23,6 +23,7 @@ const sourceBadge: Record<string, { label: string; color: string; bg: string }> 
   traveloka: { label: 'Traveloka', color: '#0064D2', bg: '#EBF4FF' },
   bca:       { label: 'BCA',       color: '#005BAC', bg: '#EBF2FF' },
   ayo:       { label: 'AYO',       color: '#FF6B00', bg: '#FFF4EE' },
+  bni:       { label: 'BNI',       color: '#0C5095', bg: '#EBF4FF' },
 };
 
 interface Category {

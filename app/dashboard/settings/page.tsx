@@ -14,6 +14,7 @@ const SOURCES = [
   { key: 'bca',       label: 'BCA',       query: 'from:bca' },
   { key: 'ayo',       label: 'AYO Indonesia', query: 'from:ayo' },
   { key: 'jago',      label: 'Jago',      query: 'from:jago' },
+  { key: 'bni',       label: 'BNI',       query: 'from:bni' },
 ];
 
 const PERIODS = [

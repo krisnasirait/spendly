@@ -61,10 +61,15 @@ export function parseBCAEmail(email: BCAEmail): ParsedEmail | null {
       category = 'transport';
     }
 
+    if (typeLower.includes('qris')) {
+      category = 'food';
+    }
+
     date = dateMatch ? new Date(dateMatch[1].replace(/(\d{2})\s+(\w+)\s+(\d{4})/, '$2 $1, $3')).toISOString() : new Date().toISOString();
 
     const companyMatch = email.body.match(/Company\/Product Name\s*:\s*(.+)/);
-    merchant = companyMatch ? companyMatch[1].trim() : 'BCA';
+    const paymentToMatch = email.body.match(/Payment to\s*:\s*(.+)/);
+    merchant = paymentToMatch ? paymentToMatch[1].trim() : (companyMatch ? companyMatch[1].trim() : 'BCA');
   }
 
   return {
