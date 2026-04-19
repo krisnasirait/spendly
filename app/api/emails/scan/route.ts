@@ -3,8 +3,44 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDb } from '@/lib/firestore';
 import { createGmailClient, fetchTransactionEmails } from '@/lib/gmail';
-import { parseEmail } from '@/lib/parsers';
+import { ParserRegistry } from '@/lib/parsers/registry';
+import { ParserV2 } from '@/lib/parsers/parser-v2';
+import { CategorizationPipeline } from '@/lib/categorization/pipeline';
+import { generateDedupKey } from '@/lib/parsers/dedup';
 import type { Transaction } from '@/types';
+
+function getParserV2(): ParserV2 {
+  const registry = new ParserRegistry();
+  registry.register({
+    id: 'bca_credit_card',
+    version: '1.0.0',
+    priority: 10,
+    match: {
+      from_patterns: ['*@bca.co.id'],
+      subject_patterns: ['*credit card transaction*'],
+    },
+    extract: {
+      amount: [{ type: 'regex', pattern: 'Sejumlah\\s*:\\s*Rp\\.?([\\d,\\.]+)' }],
+      merchant: [{ type: 'regex', pattern: 'Merchant\\/ATM\\s*:\\s*(.+)' }],
+      date: [{ type: 'regex', pattern: 'Pada Tanggal\\s*:\\s*(\\d{2}-\\d{2}-\\d{4})\\s*(\\d{2}:\\d{2}:\\d{2})\\s*WIB' }],
+    },
+  });
+  registry.register({
+    id: 'bca_debit',
+    version: '1.0.0',
+    priority: 5,
+    match: {
+      from_patterns: ['*@bca.co.id', '*@klikbca.com'],
+      subject_patterns: ['*internet transaction*'],
+    },
+    extract: {
+      amount: [{ type: 'regex', pattern: '(?:Total Bill|Total Payment)\\s*:\\s*IDR\\s*([\\d,\\.]+)' }],
+      merchant: [{ type: 'regex', pattern: 'Payment to\\s*:\\s*(.+)' }],
+      date: [{ type: 'regex', pattern: 'Transaction Date\\s*:\\s*(\\d{2}\\s+\\w+\\s+\\d{4})' }],
+    },
+  });
+  return new ParserV2(registry);
+}
 
 function isValidBcaEmail(from: string, subject: string): boolean {
   const lowerFrom = from.toLowerCase();
@@ -53,9 +89,12 @@ export async function POST() {
     const auth = createGmailClient(accessToken);
     const emails = await fetchTransactionEmails(auth);
 
+    const parser = getParserV2();
+    const categorizationPipeline = new CategorizationPipeline();
+
     const bySource: Record<string, number> = {};
     const transactions: (Partial<Transaction> & { userId: string; createdAt: string })[] = [];
-    
+
     for (const email of emails) {
       const source = detectSource(email.from, email.subject);
       if (source === 'unknown') {
@@ -66,19 +105,52 @@ export async function POST() {
       }
       bySource[source] = (bySource[source] || 0) + 1;
       try {
-        const parsed = parseEmail({ subject: email.subject, body: email.snippet, from: email.from });
-        if (!parsed && source === 'ayo') {
-          console.log('AYO parse failed:', { subject: email.subject, body: email.snippet?.substring(0, 500) });
+        const parsed = await parser.parse({
+          id: email.id,
+          from: email.from,
+          subject: email.subject,
+          body: email.snippet || '',
+        });
+
+        if (parsed.status === 'failed') {
+          console.warn('Failed to parse email:', email.subject);
+          continue;
         }
-        if (parsed) {
-          transactions.push({
-            ...parsed,
-            source,
-            userId,
-            createdAt: new Date().toISOString(),
-            messageId: email.id,
-          });
-        }
+
+        const categorization = await categorizationPipeline.categorize({
+          merchant_normalized: parsed.data.merchant_normalized,
+          source,
+          userId,
+        });
+
+        const dedupKey = generateDedupKey({
+          source,
+          source_reference_id: email.id,
+          merchant_normalized: parsed.data.merchant_normalized || '',
+          amount: parsed.data.amount || 0,
+          date: parsed.data.date || new Date().toISOString(),
+          subject_snippet: email.subject,
+        });
+
+        transactions.push({
+          amount: parsed.data.amount as number,
+          currency: parsed.data.currency,
+          merchant: parsed.data.merchant as string,
+          merchant_normalized: parsed.data.merchant_normalized,
+          date: parsed.data.date as string,
+          category: categorization.result.category,
+          category_confidence: categorization.result.confidence,
+          category_source: categorization.result.source,
+          category_reason: categorization.result.reason,
+          source,
+          parser_id: parsed.plugin_id,
+          parser_version: parsed.plugin_version,
+          dedup_key: dedupKey,
+          parsing_status: parsed.status,
+          userId,
+          createdAt: new Date().toISOString(),
+          messageId: email.id,
+        });
       } catch (e) {
         console.warn('Failed to parse email:', email.subject, e);
       }
