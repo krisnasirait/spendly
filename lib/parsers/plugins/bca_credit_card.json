@@ -1,0 +1,45 @@
+{
+  "id": "bca_credit_card",
+  "version": "1.0.0",
+  "priority": 10,
+  "supported_date_range": {
+    "start": "2024-01-01"
+  },
+  "match": {
+    "from_patterns": ["*@bca.co.id"],
+    "subject_patterns": ["*credit card transaction*"]
+  },
+  "extract": {
+    "amount": [
+      {
+        "type": "regex",
+        "pattern": "Sejumlah\\s*:\\s*Rp\\.?([\\d,\\.]+)",
+        "transform": "parse_currency_idr"
+      }
+    ],
+    "merchant": [
+      {
+        "type": "regex",
+        "pattern": "Merchant\\/ATM\\s*:\\s*(.+)"
+      },
+      {
+        "type": "keyword_proximity",
+        "fallback": "Merchant",
+        "proximity_window": 50,
+        "secondary_pattern": "Merchant[^:]*:\\s*(.+)"
+      }
+    ],
+    "date": [
+      {
+        "type": "regex",
+        "pattern": "Pada Tanggal\\s*:\\s*(\\d{2}-\\d{2}-\\d{4})\\s*(\\d{2}:\\d{2}:\\d{2})\\s*WIB",
+        "transform": "parse_datetime_id"
+      }
+    ]
+  },
+  "validate": {
+    "amount": { "min": 0, "max": 1000000000 },
+    "date": { "notFuture": true, "maxFutureDays": 1 },
+    "merchant": { "minLength": 2 }
+  }
+}
