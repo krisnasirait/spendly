@@ -90,7 +90,7 @@ export function extractField(
 
 function parseCurrencyIDR(value: string): number {
   if (!value) return 0;
-  const cleaned = value.replace(/[^\d,.]/g, '').replace(/,/g, '');
+  const cleaned = value.replace(/[^\d]/g, '');
   return parseInt(cleaned, 10) || 0;
 }
 
