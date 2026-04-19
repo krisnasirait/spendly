@@ -2,10 +2,19 @@ export interface Transaction {
   id: string;
   userId: string;
   amount: number;
+  currency: string;
   merchant: string;
+  merchant_normalized: string;
   date: string;
-  categories: string[];
-  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago' | 'bni';
+  category: string;
+  category_confidence: number;
+  category_source: string;
+  category_reason?: string;
+  source: 'shopee' | 'tokopedia' | 'travel' | 'bca' | 'ayo' | 'jago' | 'bni';
+  parser_id: string;
+  parser_version: string;
+  dedup_key: string;
+  parsing_status: 'success' | 'partial' | 'failed';
   createdAt: string;
   messageId?: string;
 }
@@ -14,9 +23,10 @@ export interface PendingTransaction {
   id: string;
   merchant: string;
   amount: number;
+  currency: string;
   date: string;
-  categories: string[];
-  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago' | 'bni';
+  category: string;
+  source: 'shopee' | 'tokopedia' | 'travel' | 'bca' | 'ayo' | 'jago' | 'bni';
   messageId: string;
   createdAt: string;
   status: 'pending';
