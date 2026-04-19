@@ -1,0 +1,37 @@
+<h2>Pending Transactions (Mobile)</h2>
+<p class="subtitle">How should pending transactions show on mobile?</p>
+
+<div class="options">
+  <div class="option" data-choice="pending-cards" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Stacked Cards with Actions</h3>
+      <p>Each pending tx is a card with merchant, amount, date. Approve/Dismiss buttons are large and full-width — easy to tap. Swipe-to-dismiss as bonus.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌─────────────────────────┐
+│ ⏳ 19 Apr    Gojek      │
+│           Rp 25.000     │
+│ [Approve ✓] [Dismiss ✗] │
+├─────────────────────────┤
+│ ⏳ 18 Apr    Grab       │
+│           Rp 45.000     │
+│ [Approve ✓] [Dismiss ✗] │
+└─────────────────────────┘</pre>
+    </div>
+  </div>
+  <div class="option" data-choice="pending-swipe" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Swipe Actions (Recommended)</h3>
+      <p>Full-width card with merchant/amount/date. Swipe right to approve (green), swipe left to dismiss (red). Large tap targets, modern feel. Requires tap as fallback.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+← Swipe │ Swipe →
+┌─────────────────────────┐
+│ ⏳ 19 Apr    Gojek      │
+│           Rp 25.000     │
+│           [tap: actions] │
+└─────────────────────────┘
+(GREEN = Approve, RED = Dismiss)</pre>
+    </div>
+  </div>
+</div>

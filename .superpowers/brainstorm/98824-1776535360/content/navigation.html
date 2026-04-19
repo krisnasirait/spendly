@@ -1,0 +1,38 @@
+<h2>Navigation & Dashboard (Mobile)</h2>
+<p class="subtitle">How should the dashboard header work on mobile?</p>
+
+<div class="options">
+  <div class="option" data-choice="header-stacked" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Stacked Header</h3>
+      <p>Greeting takes full width, period selector + scan button stack below it. More vertical space but everything visible.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌─────────────────────────┐
+│ Good morning, John      │
+│ 19 Apr 2026             │
+├─────────────────────────┤
+│ [Today][Week][Month]    │
+│ [    Scan Emails    ]   │
+├─────────────────────────┤
+│ Stats cards (2x2 grid)  │
+│ ...                     │
+└─────────────────────────┘</pre>
+    </div>
+  </div>
+  <div class="option" data-choice="header-compact" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Compact Header</h3>
+      <p>Greeting smaller, period selector collapses to dropdown, scan button stays. Fits everything in one row. More space for content.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌─────────────────────────┐
+│ ☀️ Good morning, John   │
+│ [Dropdown: This Month][📧]│
+├─────────────────────────┤
+│ Stats cards (2x2 grid)  │
+│ ...                     │
+└─────────────────────────┘</pre>
+    </div>
+  </div>
+</div>

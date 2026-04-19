@@ -1,0 +1,43 @@
+<h2>Stat Cards on Mobile</h2>
+<p class="subtitle">How should the 4 stat cards display on mobile?</p>
+
+<div class="options">
+  <div class="option" data-choice="stat-1col" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Single Column Stack</h3>
+      <p>Each stat card full width, larger text. Easy to scan, lots of vertical scroll. Shows most data.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌─────────────────────────┐
+│ TOTAL SPEND             │
+│ Rp 2.450.000            │
+│ ↑ 12% vs last month     │
+├─────────────────────────┤
+│ TRANSACTIONS            │
+│ 47                      │
+│ ↑ 5 vs last month      │
+├─────────────────────────┤
+│ TOP CATEGORY            │
+│ Food & Drinks           │
+├─────────────────────────┤
+│ AI INSIGHTS             │
+│ 3 new                  │
+└─────────────────────────┘</pre>
+    </div>
+  </div>
+  <div class="option" data-choice="stat-2col" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>2x2 Grid (Recommended)</h3>
+      <p>Compact but still 4 visible. Each card has larger text, more readable than 4-col. Good balance.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌───────────┬───────────┐
+│ TOTAL     │ TXNS      │
+│ Rp 2.4jt  │ 47 ↑5    │
+├───────────┼───────────┤
+│ TOP CAT   │ INSIGHTS  │
+│ Food      │ 3 new     │
+└───────────┴───────────┘</pre>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+<h2>Add / Edit Transaction Panel (Mobile)</h2>
+<p class="subtitle">How should forms open on mobile — side panel or bottom sheet?</p>
+
+<div class="options">
+  <div class="option" data-choice="side-panel" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Side Panel (Current)</h3>
+      <p>Slides in from right, 400px wide. On desktop it covers partial screen. On mobile it may feel like a full-screen takeover anyway.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="bottom-sheet" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Bottom Sheet (Recommended)</h3>
+      <p>Slides up from bottom — more natural on mobile, thumb-friendly, easy to drag down to dismiss. Takes ~80% of screen height. Better mobile feel.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌─────────────────────────┐
+│ ▓▓▓▓▓▓ (drag handle)    │
+│ Add Transaction    [✕]  │
+├─────────────────────────┤
+│ Merchant                │
+│ [________________]      │
+│                         │
+│ Amount                  │
+│ [________________]      │
+│                         │
+│ Category    [Food    ▼] │
+│                         │
+│ [    Save Transaction   ]│
+└─────────────────────────┘</pre>
+    </div>
+  </div>
+</div>

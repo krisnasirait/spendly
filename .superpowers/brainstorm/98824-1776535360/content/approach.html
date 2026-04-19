@@ -1,0 +1,26 @@
+<h2>Mobile UX: How should we restructure?</h2>
+<p class="subtitle">Choose the overall approach for mobile layouts</p>
+
+<div class="options">
+  <div class="option" data-choice="responsive" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Responsive Refinement</h3>
+      <p>Same layout, just better breakpoints. Smaller padding, 1-2 col grids, scrollable tables. Quickest to implement.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="mobile-first-redesign" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Mobile-First Redesign</h3>
+      <p>Full card-based layout for mobile. Tables become stacked cards, charts resize, larger touch targets, bottom sheets for forms. Better UX but more work.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid (Recommended)</h3>
+      <p>Mobile-first for key flows (dashboard, history, pending) — cards, bigger text, larger touch targets. Analytics/settings get responsive refinement only. Balanced effort vs impact.</p>
+    </div>
+  </div>
+</div>

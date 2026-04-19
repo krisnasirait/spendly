@@ -1,0 +1,37 @@
+<h2>Transaction List: Table vs Cards</h2>
+<p class="subtitle">On mobile, how should transaction lists (history & pending) display?</p>
+
+<div class="options">
+  <div class="option" data-choice="table-scroll" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Compact Table (Horizontal Scroll)</h3>
+      <p>Keep table but hide less important columns on mobile (source, category icon only). Horizontal scroll for full data. Familiar pattern.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌─────────────────────────┐
+│ ☑️ │ 19 Apr │ Gojek    │ → │
+├─────────────────────────┤
+│   │ 18 Apr │ Starbucks │   │
+│   │ 17 Apr │ Tokopedia │   │
+└─────────────────────────┘
+(→ = scroll right for amount)</pre>
+    </div>
+  </div>
+  <div class="option" data-choice="stacked-cards" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Stacked Cards (Recommended)</h3>
+      <p>Each transaction becomes a full-width card. Large merchant name, amount, date, category badge — easy to read and tap. Better for small screens.</p>
+      <pre style="font-size: 11px; background: #f0f0f0; padding: 8px; border-radius: 6px; margin-top: 8px;">
+┌─────────────────────────┐
+│ ☑️ 19 Apr               │
+│ Gojek                   │
+│ Rp 25.000    [Transport]│
+├─────────────────────────┤
+│ ☑️ 18 Apr               │
+│ Starbucks               │
+│ Rp 68.000    [Food]     │
+└─────────────────────────┘</pre>
+    </div>
+  </div>
+</div>
