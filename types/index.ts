@@ -10,7 +10,7 @@ export interface Transaction {
   category_confidence: number;
   category_source: string;
   category_reason?: string;
-  source: 'shopee' | 'tokopedia' | 'travel' | 'bca' | 'ayo' | 'jago' | 'bni';
+  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago' | 'bni';
   parser_id: string;
   parser_version: string;
   dedup_key: string;
@@ -26,7 +26,7 @@ export interface PendingTransaction {
   currency: string;
   date: string;
   category: string;
-  source: 'shopee' | 'tokopedia' | 'travel' | 'bca' | 'ayo' | 'jago' | 'bni';
+  source: 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago' | 'bni';
   messageId: string;
   createdAt: string;
   status: 'pending';

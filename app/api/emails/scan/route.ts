@@ -54,7 +54,7 @@ function isValidBcaEmail(from: string, subject: string): boolean {
   return isValidSender && isValidSubject;
 }
 
-function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago' | 'unknown' {
+function detectSource(from: string, subject: string): 'shopee' | 'tokopedia' | 'traveloka' | 'bca' | 'ayo' | 'jago' | 'bni' | 'unknown' {
   const lower = from.toLowerCase();
   if (lower.includes('shopee')) return 'shopee';
   if (lower.includes('tokopedia')) return 'tokopedia';
