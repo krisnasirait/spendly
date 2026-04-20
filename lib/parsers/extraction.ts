@@ -46,7 +46,7 @@ export function extractField(
       if (strategy.type === 'regex' && strategy.pattern) {
         const match = body.match(new RegExp(strategy.pattern));
         if (match) {
-          let value = match[1]?.trim() || match[0]?.trim();
+          let value: string | number = match[1]?.trim() || match[0]?.trim();
 
           if (strategy.transform === 'parse_currency_idr') {
             value = parseCurrencyIDR(value);
@@ -69,7 +69,7 @@ export function extractField(
         if (extracted) {
           logEntry.result = 'success';
           logEntry.value_extracted = extracted;
-          return { value: extracted, log: logEntry };
+          return { value: extracted, log: [logEntry] };
         }
       } else if (strategy.type === 'xpath' && strategy.pattern) {
         logEntry.result = 'no_match';

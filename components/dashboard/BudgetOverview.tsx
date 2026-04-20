@@ -66,7 +66,7 @@ export function BudgetOverview({ budgets, transactions, onUpdateBudgets }: Budge
             const spent = transactions
               .filter(tx => {
                 const txDate = new Date(tx.date);
-                return tx.categories.includes(category) && txDate >= start && txDate < end;
+                return tx.category === category && txDate >= start && txDate < end;
               })
               .reduce((sum, tx) => sum + tx.amount, 0);
 

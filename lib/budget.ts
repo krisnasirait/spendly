@@ -17,7 +17,7 @@ export function calculateCategorySpend(
   return transactions
     .filter(tx => {
       const txDate = new Date(tx.date);
-      return tx.categories.includes(category) && txDate >= startDate && txDate < endDate;
+      return tx.category === category && txDate >= startDate && txDate < endDate;
     })
     .reduce((sum, tx) => sum + tx.amount, 0);
 }
@@ -31,7 +31,7 @@ export function getAverageMonthlySpend(
   
   const categoryTxs = transactions.filter(tx => {
     const txDate = new Date(tx.date);
-    return tx.categories.includes(category) && txDate >= threeMonthsAgo;
+    return tx.category === category && txDate >= threeMonthsAgo;
   });
   
   if (categoryTxs.length === 0) return 0;

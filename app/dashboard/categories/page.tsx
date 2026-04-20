@@ -124,12 +124,11 @@ export default function CategoriesPage() {
     const map: Record<string, { total: number; count: number }> = {};
     categoryData.forEach(c => { map[c.key] = { total: 0, count: 0 }; });
     filteredTransactions.forEach((t) => {
-      t.categories.forEach(cat => {
-        if (map[cat]) {
-          map[cat].total += t.amount;
-          map[cat].count += 1;
-        }
-      });
+      const cat = t.category;
+      if (map[cat]) {
+        map[cat].total += t.amount;
+        map[cat].count += 1;
+      }
     });
     return map;
   }, [filteredTransactions, categoryData]);
@@ -137,7 +136,7 @@ export default function CategoriesPage() {
   const totalAll = Object.values(byCategory).reduce((s, v) => s + v.total, 0);
 
   const selectedTxs = useMemo(() =>
-    selected ? filteredTransactions.filter(t => t.categories.includes(selected))
+    selected ? filteredTransactions.filter(t => t.category === selected)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [],
     [selected, filteredTransactions]

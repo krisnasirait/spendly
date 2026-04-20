@@ -47,7 +47,7 @@ interface ScanResults {
     merchant: string;
     amount: number;
     date: string;
-    categories: string[];
+    category: string;
     source: string;
   }>;
 }
@@ -227,7 +227,7 @@ function ScanResultsPanel({ results, onViewAll }: { results: ScanResults; onView
                           }}>{tx.source}</span>
                         </td>
                         <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                          {tx.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
+                          {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
                         </td>
                         <td style={{ fontSize: 10, color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={sourceEmail?.subject || ''}
@@ -374,7 +374,7 @@ function ScanResultsModal({ results, onClose }: { results: ScanResults; onClose:
                           }}>{tx.source}</span>
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          {tx.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
+                          {tx.category.charAt(0).toUpperCase() + tx.category.slice(1)}
                         </td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={sourceEmail?.subject || ''}

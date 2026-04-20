@@ -17,13 +17,13 @@ export class ParserV2 {
     const logs: ParsedResult['extraction_log'] = [];
 
     const amountResult = extractField(email.body, plugin.extract.amount);
-    logs.push(amountResult.log);
+    logs.push(...amountResult.log);
 
     const merchantResult = extractField(email.body, plugin.extract.merchant);
-    logs.push(merchantResult.log);
+    logs.push(...merchantResult.log);
 
     const dateResult = extractField(email.body, plugin.extract.date);
-    logs.push(dateResult.log);
+    logs.push(...dateResult.log);
 
     const amount = amountResult.value as number | null;
     const merchant = merchantResult.value as string | null;

@@ -5,9 +5,17 @@ import { getCategoryColor } from '@/lib/category-colors';
 import { useDevice } from '@/hooks/useDevice';
 import type { Transaction } from '@/types';
 
+interface NewTransactionData {
+  merchant: string;
+  amount: number;
+  date: string;
+  category: string;
+  source?: string;
+}
+
 interface AddTransactionPanelProps {
   onClose: () => void;
-  onAdd: (transaction: Omit<Transaction, 'userId' | 'createdAt'> & { source?: string }) => void;
+  onAdd: (transaction: NewTransactionData & { id: string }) => void;
 }
 
 interface Category {
@@ -19,7 +27,7 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
   const [merchant, setMerchant] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [category, setCategory] = useState<string>('other');
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [newCatInput, setNewCatInput] = useState('');
   const [suggestions, setSuggestions] = useState<Category[]>([]);
@@ -35,43 +43,22 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
       .catch(() => {});
   }, []);
 
-  function removeCategory(name: string) {
-    setCategories(prev => prev.filter(c => c !== name));
-  }
-
-  function addCategory(name: string) {
-    if (name && !categories.includes(name)) {
-      const exists = allCategories.some(c => c.name.toLowerCase() === name.toLowerCase());
-      if (!exists) {
-        fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
-        }).then(async r => {
-          if (r.ok) {
-            const newCat = await r.json();
-            if (newCat?.id) {
-              setAllCategories(prev => [...prev, newCat]);
-              setCategories(prev => [...prev, newCat.name]);
-            }
-          }
-        }).catch(() => {});
-      } else {
-        const matched = allCategories.find(c => c.name.toLowerCase() === name.toLowerCase());
-        if (matched) setCategories(prev => [...prev, matched.name]);
-      }
-    }
+  function selectCategory(name: string) {
+    setCategory(name);
     setNewCatInput('');
     setSuggestions([]);
     setShowCreate(false);
+  }
+
+  function addCategory(name: string) {
+    selectCategory(name);
   }
 
   function handleInputChange(value: string) {
     setNewCatInput(value);
     if (value.trim()) {
       const filtered = allCategories.filter(c =>
-        c.name.toLowerCase().includes(value.toLowerCase()) &&
-        !categories.includes(c.name)
+        c.name.toLowerCase().includes(value.toLowerCase())
       );
       setSuggestions(filtered);
       setShowCreate(filtered.length === 0 && value.trim().length > 0);
@@ -90,10 +77,6 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
       setError('Amount must be greater than 0');
       return;
     }
-    if (categories.length === 0) {
-      setError('At least one category is required');
-      return;
-    }
 
     setSaving(true);
     setError(null);
@@ -106,7 +89,7 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
           merchant: merchant.trim(),
           amount: Number(amount),
           date,
-          categories,
+          category,
           source: 'manual',
         }),
       });
@@ -118,7 +101,7 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
           merchant: merchant.trim(),
           amount: Number(amount),
           date,
-          categories,
+          category,
           source: 'manual' as Transaction['source'],
         });
         onClose();
@@ -195,28 +178,19 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
             }} />
           </div>
 
-          {/* Categories */}
+          {/* Category */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Categories</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Category</label>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-              {categories.map(cat => {
-                const color = getCategoryColor(cat);
-                return (
-                  <span key={cat} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500,
-                    background: `${color}20`,
-                    color: color,
-                  }}>
-                    {cat}
-                    <button onClick={() => removeCategory(cat)} style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'inherit', fontSize: 14, lineHeight: 1, padding: 0,
-                    }}>×</button>
-                  </span>
-                );
-              })}
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500,
+                background: `${getCategoryColor(category)}20`,
+                color: getCategoryColor(category),
+              }}>
+                {category}
+              </span>
             </div>
 
             <input
@@ -228,7 +202,7 @@ export default function AddTransactionPanel({ onClose, onAdd }: AddTransactionPa
                   addCategory(newCatInput.trim());
                 }
               }}
-              placeholder="Type to add category…"
+              placeholder="Type to change category…"
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 10,
                 border: '1.5px solid var(--border)', background: 'var(--bg-page)',

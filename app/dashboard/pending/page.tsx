@@ -43,7 +43,7 @@ function EditPendingPanel({
   const [merchant, setMerchant] = useState(transaction.merchant);
   const [amount, setAmount] = useState(transaction.amount);
   const [date, setDate] = useState(new Date(transaction.date).toISOString().split('T')[0]);
-  const [categories, setCategories] = useState<string[]>(transaction.categories || []);
+  const [category, setCategory] = useState<string>(transaction.category);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [newCatInput, setNewCatInput] = useState('');
   const [suggestions, setSuggestions] = useState<Category[]>([]);
@@ -67,45 +67,22 @@ function EditPendingPanel({
       .finally(() => setCategoriesLoading(false));
   }, []);
 
-  function removeCategory(name: string) {
-    setCategories(prev => prev.filter(c => c !== name));
-  }
-
-  function addCategory(name: string) {
-    if (name && !categories.includes(name)) {
-      const exists = allCategories.some(c => c.name.toLowerCase() === name.toLowerCase());
-      if (!exists) {
-        fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
-        }).then(async r => {
-          if (r.ok) {
-            const newCat = await r.json();
-            if (newCat?.id) {
-              setAllCategories(prev => [...prev, newCat]);
-              setCategories(prev => [...prev, newCat.name]);
-            }
-          }
-        }).catch(() => { setCreateError('Failed to create category'); });
-      } else {
-        const matched = allCategories.find(c => c.name.toLowerCase() === name.toLowerCase());
-        if (matched) {
-          setCategories(prev => [...prev, matched.name]);
-        }
-      }
-    }
+  function selectCategory(name: string) {
+    setCategory(name);
     setNewCatInput('');
     setSuggestions([]);
     setShowCreate(false);
+  }
+
+  function addCategory(name: string) {
+    selectCategory(name);
   }
 
   function handleInputChange(value: string) {
     setNewCatInput(value);
     if (value.trim()) {
       const filtered = allCategories.filter(c =>
-        c.name.toLowerCase().includes(value.toLowerCase()) &&
-        !categories.includes(c.name)
+        c.name.toLowerCase().includes(value.toLowerCase())
       );
       setSuggestions(filtered);
       setShowCreate(filtered.length === 0 && value.trim().length > 0);
@@ -122,10 +99,10 @@ function EditPendingPanel({
       const res = await fetch(`/api/pending?id=${transaction.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ merchant, amount, date, categories }),
+        body: JSON.stringify({ merchant, amount, date, category }),
       });
       if (res.ok) {
-        onSave({ ...transaction, merchant, amount, date, categories });
+        onSave({ ...transaction, merchant, amount, date, category });
         onClose();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -184,26 +161,17 @@ function EditPendingPanel({
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Categories</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Category</label>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-              {categories.map(cat => {
-                const color = getCategoryColor(cat);
-                return (
-                  <span key={cat} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500,
-                    background: `${color}20`,
-                    color: color,
-                  }}>
-                    {cat}
-                    <button onClick={() => removeCategory(cat)} style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'inherit', fontSize: 14, lineHeight: 1, padding: 0,
-                    }}>×</button>
-                  </span>
-                );
-              })}
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500,
+                background: `${getCategoryColor(category)}20`,
+                color: getCategoryColor(category),
+              }}>
+                {category}
+              </span>
             </div>
 
             {categoriesLoading && <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading categories…</div>}
@@ -219,7 +187,7 @@ function EditPendingPanel({
                     addCategory(newCatInput.trim());
                   }
                 }}
-                placeholder="Type to add category…"
+                placeholder="Type to change category…"
                 style={{
                   width: '100%', padding: '10px 14px', borderRadius: 10,
                   border: '1.5px solid var(--border)', background: 'var(--bg-page)',
@@ -392,16 +360,14 @@ export default function PendingPage() {
                     </div>
                     <div style={{ fontWeight: 600, fontSize: 15 }}>{tx.merchant}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-                      {tx.categories.map(cat => (
-                        <span key={cat} style={{
-                          display: 'inline-block', padding: '2px 8px', borderRadius: 999,
-                          fontSize: 10, fontWeight: 500,
-                          background: `${getCategoryColor(cat)}20`,
-                          color: getCategoryColor(cat),
-                        }}>
-                          {categoryLabel[cat] ?? cat}
-                        </span>
-                      ))}
+                      <span style={{
+                        display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                        fontSize: 10, fontWeight: 500,
+                        background: `${getCategoryColor(tx.category)}20`,
+                        color: getCategoryColor(tx.category),
+                      }}>
+                        {categoryLabel[tx.category] ?? tx.category}
+                      </span>
                     </div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--danger)' }}>
@@ -487,16 +453,14 @@ export default function PendingPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {tx.categories.map(cat => (
-                            <span key={cat} style={{
-                              display: 'inline-block', padding: '2px 8px', borderRadius: 999,
-                              fontSize: 11, fontWeight: 500,
-                              background: `${getCategoryColor(cat)}20`,
-                              color: getCategoryColor(cat),
-                            }}>
-                              {categoryLabel[cat] ?? cat}
-                            </span>
-                          ))}
+                          <span style={{
+                            display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                            fontSize: 11, fontWeight: 500,
+                            background: `${getCategoryColor(tx.category)}20`,
+                            color: getCategoryColor(tx.category),
+                          }}>
+                            {categoryLabel[tx.category] ?? tx.category}
+                          </span>
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>

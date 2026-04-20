@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest) {
     .get();
 
   const transactions: Transaction[] = snapshot.docs.map((doc) => {
-    const data = doc.data() as Omit<Transaction, 'id' | 'userId'> & { date?: Date | string | { toDate?: () => Date } };
+    const data = doc.data() as Omit<Transaction, 'id' | 'userId'> & { date?: Date | string | { toDate?: () => Date }; categories?: string[] };
     let dateStr = '';
     if (data.date) {
       if (typeof data.date === 'string') {
@@ -40,10 +40,18 @@ export async function GET(_req: NextRequest) {
       id: doc.id,
       userId,
       merchant: data.merchant,
+      merchant_normalized: data.merchant_normalized || data.merchant?.toLowerCase().replace(/[^\w\s]/g, '') || '',
       amount: data.amount,
-      categories: data.categories || [],
-      source: data.source,
+      currency: data.currency || 'IDR',
       date: dateStr,
+      category: data.category || (Array.isArray(data.categories) ? data.categories[0] : 'other') || 'other',
+      category_confidence: data.category_confidence ?? 0.5,
+      category_source: data.category_source || 'default',
+      source: data.source,
+      parser_id: data.parser_id || 'legacy',
+      parser_version: data.parser_version || '0.0.0',
+      dedup_key: data.dedup_key || '',
+      parsing_status: data.parsing_status || 'partial',
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : ((data.createdAt as unknown) instanceof Date ? (data.createdAt as Date).toISOString() : String(data.createdAt)),
     };
   });
@@ -59,7 +67,7 @@ export async function POST(req: NextRequest) {
 
   const userId = (session.user as { id: string }).id;
   const body = await req.json().catch(() => ({}));
-  const { merchant, amount, date, categories, source } = body;
+  const { merchant, amount, date, category, source } = body;
 
   if (!merchant || typeof merchant !== 'string' || merchant.trim() === '') {
     return NextResponse.json({ error: 'merchant is required' }, { status: 400 });
@@ -70,19 +78,24 @@ export async function POST(req: NextRequest) {
   if (!date) {
     return NextResponse.json({ error: 'date is required' }, { status: 400 });
   }
-  if (!categories || !Array.isArray(categories)) {
-    return NextResponse.json({ error: 'categories must be an array' }, { status: 400 });
-  }
 
   const db = getDb();
   const txRef = db.collection('users').doc(userId).collection('transactions').doc();
-  
+
   await txRef.set({
     merchant: merchant.trim(),
+    merchant_normalized: merchant.trim().toLowerCase().replace(/[^\w\s]/g, ''),
     amount,
+    currency: 'IDR',
     date: new Date(date),
-    categories,
+    category: category || 'other',
+    category_confidence: 1.0,
+    category_source: 'manual',
     source: source || 'manual',
+    parser_id: 'manual',
+    parser_version: '0.0.0',
+    dedup_key: '',
+    parsing_status: 'success',
     userId,
     createdAt: new Date(),
   });
@@ -127,23 +140,28 @@ export async function PATCH(req: NextRequest) {
 
   const userId = (session.user as { id: string }).id;
   const body = await req.json().catch(() => ({}));
-  const { id, merchant, amount, date, categories } = body;
+  const { id, merchant, amount, date, category } = body;
 
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
   const updates: Record<string, unknown> = {};
-  if (typeof merchant === 'string' && merchant.trim().length > 0) updates.merchant = merchant;
+  if (typeof merchant === 'string' && merchant.trim().length > 0) {
+    updates.merchant = merchant;
+    updates.merchant_normalized = merchant.trim().toLowerCase().replace(/[^\w\s]/g, '');
+  }
   if (typeof amount === 'number' && !isNaN(amount)) updates.amount = amount;
   if (date !== undefined) {
     const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) return NextResponse.json({ error: 'invalid date' }, { status: 400 });
     updates.date = parsedDate;
   }
-  if (categories !== undefined) {
-    if (!Array.isArray(categories) || !categories.every(c => typeof c === 'string')) {
-      return NextResponse.json({ error: 'categories must be array of strings' }, { status: 400 });
+  if (category !== undefined) {
+    if (typeof category !== 'string') {
+      return NextResponse.json({ error: 'category must be a string' }, { status: 400 });
     }
-    updates.categories = categories;
+    updates.category = category;
+    updates.category_source = 'manual';
+    updates.category_confidence = 1.0;
   }
 
   if (Object.keys(updates).length === 0) {

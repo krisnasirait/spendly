@@ -32,7 +32,7 @@ function generateInsights(transactions: Transaction[], budgets: Budget[], userId
     if (budget.amount <= 0) continue;
     
     const spent = monthTxs
-      .filter(tx => tx.categories.includes(category))
+      .filter(tx => tx.category === category)
       .reduce((sum, tx) => sum + tx.amount, 0);
     
     const pct = (spent / budget.amount) * 100;
@@ -123,11 +123,11 @@ function generateInsights(transactions: Transaction[], budgets: Budget[], userId
       if (budget.amount <= 0) continue;
       
       const spent = monthTxs
-        .filter(tx => tx.categories.includes(category))
+        .filter(tx => tx.category === category)
         .reduce((sum, tx) => sum + tx.amount, 0);
-      
+
       const pct = (spent / budget.amount) * 100;
-      
+
       if (pct < 60) {
         insights.push({
           id: crypto.randomUUID(),

@@ -338,7 +338,7 @@ export default function DashboardPage() {
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.forEach((t) => {
-      t.categories.forEach(cat => { map[cat] = (map[cat] ?? 0) + t.amount; });
+      map[t.category] = (map[t.category] ?? 0) + t.amount;
     });
     return Object.entries(map).map(([cat, total]) => ({ cat, total }));
   }, [filtered]);
@@ -766,16 +766,14 @@ export default function DashboardPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {tx.categories.map(cat => (
-                            <span key={cat} style={{
-                              display: 'inline-block', padding: '2px 8px', borderRadius: 4,
-                              fontSize: 11, fontWeight: 500,
-                              background: `${getCategoryColor(cat)}15`,
-                              color: getCategoryColor(cat),
-                            }}>
-                              {categoryLabel[cat] ?? cat}
-                            </span>
-                          ))}
+                          <span style={{
+                            display: 'inline-block', padding: '2px 8px', borderRadius: 4,
+                            fontSize: 11, fontWeight: 500,
+                            background: `${getCategoryColor(tx.category)}15`,
+                            color: getCategoryColor(tx.category),
+                          }}>
+                            {categoryLabel[tx.category] ?? tx.category}
+                          </span>
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>

@@ -126,7 +126,7 @@ export default function HistoryPage() {
     
     if (search) list = list.filter(t =>
       t.merchant.toLowerCase().includes(search.toLowerCase()));
-    if (filterCat) list = list.filter(t => t.categories.includes(filterCat));
+    if (filterCat) list = list.filter(t => t.category === filterCat);
     if (filterSource) list = list.filter(t => t.source === filterSource);
     list.sort((a, b) => {
       let diff = 0;
@@ -350,7 +350,7 @@ export default function HistoryPage() {
               new Date(tx.date).toLocaleDateString('id-ID'),
               `"${tx.merchant.replace(/"/g, '""')}"`,
               tx.amount.toString(),
-              tx.categories.join('; '),
+              tx.category,
               tx.source,
             ]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -627,16 +627,14 @@ export default function HistoryPage() {
                         {tx.merchant}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {tx.categories.map(cat => (
-                          <span key={cat} style={{
-                            display: 'inline-block', padding: '2px 8px', borderRadius: 999,
-                            fontSize: 11, fontWeight: 500,
-                            background: `${getCategoryColor(cat)}20`,
-                            color: getCategoryColor(cat),
-                          }}>
-                            {categoryLabel[cat] ?? cat}
-                          </span>
-                        ))}
+                        <span style={{
+                          display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+                          fontSize: 11, fontWeight: 500,
+                          background: `${getCategoryColor(tx.category)}20`,
+                          color: getCategoryColor(tx.category),
+                        }}>
+                          {categoryLabel[tx.category] ?? tx.category}
+                        </span>
                         <span style={{
                           display: 'inline-block', padding: '2px 8px', borderRadius: 999,
                           fontSize: 11, fontWeight: 600, background: badge.bg, color: badge.color,
@@ -714,18 +712,16 @@ export default function HistoryPage() {
                           fontSize: 11, fontWeight: 600, background: badge.bg, color: badge.color,
                         }}>{badge.label}</span>
                       </td>
-                        <td>
-                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                           {tx.categories.map(cat => (
-                             <span key={cat} style={{
+<td>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            <span style={{
                               display: 'inline-block', padding: '2px 8px', borderRadius: 999,
                               fontSize: 11, fontWeight: 500,
-                              background: `${getCategoryColor(cat)}20`,
-                              color: getCategoryColor(cat),
+                              background: `${getCategoryColor(tx.category)}20`,
+                              color: getCategoryColor(tx.category),
                             }}>
-                              {categoryLabel[cat] ?? cat}
+                              {categoryLabel[tx.category] ?? tx.category}
                             </span>
-                          ))}
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger)' }}>

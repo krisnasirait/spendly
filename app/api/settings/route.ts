@@ -87,7 +87,7 @@ export async function PUT(req: NextRequest) {
             merchant: data.merchant,
             amount: data.amount,
             date: new Date(data.date),
-            categories: data.categories,
+            category: data.category,
             source: data.source,
             userId,
             createdAt: new Date(),
