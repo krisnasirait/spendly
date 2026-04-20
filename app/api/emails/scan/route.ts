@@ -269,7 +269,7 @@ const jagoTxs = newTransactions.filter(tx => tx.source === 'jago');
         merchant: t.merchant,
         amount: t.amount,
         date: t.date,
-        categories: t.categories,
+        category: t.category,
         source: t.source,
       })),
     });
