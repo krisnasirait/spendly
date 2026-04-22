@@ -94,19 +94,23 @@ export async function POST(req: NextRequest) {
 
     if (action === 'approve') {
       const txRef = db.collection('users').doc(userId).collection('transactions').doc();
+
       const dateValue = data!.date instanceof Timestamp
         ? data!.date.toDate()
         : (data!.date instanceof Date ? data!.date : new Date(data!.date as string));
-      await txRef.set({
-        merchant: data!.merchant,
-        amount: data!.amount,
-        date: dateValue,
-        categories: data!.categories,
-        source: data!.source,
-        userId,
-        createdAt: new Date(),
-        messageId: data!.messageId,
-      });
+
+      // Spread everything from the pending doc, then override the fields that change on approval.
+      // Strip undefined values so Firestore never receives them.
+      const txData = Object.fromEntries(
+        Object.entries({
+          ...data,
+          date: dateValue,
+          userId,
+          createdAt: new Date(),
+        }).filter(([, v]) => v !== undefined)
+      );
+
+      await txRef.set(txData);
       await pendingRef.delete();
       return NextResponse.json({ success: true, transactionId: txRef.id });
     } else {

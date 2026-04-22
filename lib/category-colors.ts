@@ -6,7 +6,8 @@ const colorPalette = [
 
 const categoryColorCache = new Map<string, string>();
 
-export function getCategoryColor(categoryName: string): string {
+export function getCategoryColor(categoryName: string | null | undefined): string {
+  if (!categoryName) return '#A3A3A3'; // neutral gray for unknown categories
   if (categoryColorCache.has(categoryName)) {
     return categoryColorCache.get(categoryName)!;
   }
@@ -16,7 +17,7 @@ export function getCategoryColor(categoryName: string): string {
   return color;
 }
 
-export function getCategoryColorWithBg(categoryName: string): { color: string; bg: string } {
+export function getCategoryColorWithBg(categoryName: string | null | undefined): { color: string; bg: string } {
   const color = getCategoryColor(categoryName);
   return { color, bg: `${color}20` };
 }

@@ -90,8 +90,43 @@ export function extractField(
 
 function parseCurrencyIDR(value: string): number {
   if (!value) return 0;
-  const cleaned = value.replace(/[^\d]/g, '');
-  return parseInt(cleaned, 10) || 0;
+
+  const lastComma  = value.lastIndexOf(',');
+  const lastPeriod = value.lastIndexOf('.');
+
+  if (lastComma !== -1 && lastPeriod !== -1) {
+    if (lastPeriod > lastComma) {
+      // US format: 21,000.00  → comma = thousands, period = decimal
+      const intPart = value.slice(0, lastPeriod).replace(/,/g, '');
+      return parseInt(intPart, 10) || 0;
+    } else {
+      // EU/ID format: 21.000,00 → period = thousands, comma = decimal
+      const intPart = value.slice(0, lastComma).replace(/\./g, '');
+      return parseInt(intPart, 10) || 0;
+    }
+  }
+
+  if (lastPeriod !== -1) {
+    const afterPeriod = value.slice(lastPeriod + 1);
+    if (afterPeriod.length <= 2) {
+      // Decimal only: 21000.00 → 21000
+      return parseInt(value.slice(0, lastPeriod), 10) || 0;
+    }
+    // Indonesian thousands: 1.500.000 or 21.000 → strip all periods
+    return parseInt(value.replace(/\./g, ''), 10) || 0;
+  }
+
+  if (lastComma !== -1) {
+    const afterComma = value.slice(lastComma + 1);
+    if (afterComma.length <= 2) {
+      // Decimal only: 21000,00 → 21000
+      return parseInt(value.slice(0, lastComma), 10) || 0;
+    }
+    // Thousands: 21,000 → strip commas
+    return parseInt(value.replace(/,/g, ''), 10) || 0;
+  }
+
+  return parseInt(value.replace(/[^\d]/g, ''), 10) || 0;
 }
 
 function parseDateTimeID(value: string): string {

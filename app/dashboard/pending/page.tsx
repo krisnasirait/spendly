@@ -42,7 +42,10 @@ function EditPendingPanel({
 }) {
   const [merchant, setMerchant] = useState(transaction.merchant);
   const [amount, setAmount] = useState(transaction.amount);
-  const [date, setDate] = useState(new Date(transaction.date).toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    const d = new Date(transaction.date);
+    return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
+  });
   const [category, setCategory] = useState<string>(transaction.category);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [newCatInput, setNewCatInput] = useState('');

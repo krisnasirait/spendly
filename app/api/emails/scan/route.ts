@@ -37,10 +37,18 @@ function getParserV2(): ParserV2 {
       subject_patterns: ['*internet transaction*'],
     },
     extract: {
-      amount: [{ type: 'regex', pattern: '(?:Total Bill|Total Payment)\\s*:\\s*IDR\\s*([\\d,\\.]+)', transform: 'parse_currency_idr' }],
+      amount: [
+        // Try Total Payment first — this is the actual money paid for CC bill payments
+        // and also the correct field for QRIS / debit transactions
+        { type: 'regex', pattern: 'Total Payment\\s*:\\s*IDR\\s*([\\d,\\.]+)', transform: 'parse_currency_idr' },
+        // Fallback for plain debit/transfer emails that only have Total Bill
+        { type: 'regex', pattern: 'Total Bill\\s*:\\s*IDR\\s*([\\d,\\.]+)', transform: 'parse_currency_idr' },
+      ],
       merchant: [
         { type: 'regex', pattern: 'Payment to\\s*:\\s*(.+)' },
         { type: 'regex', pattern: 'Company\\/Product Name\\s*:\\s*(.+)' },
+        // Fallback for CC bill-payment emails that have no merchant — use the transaction type
+        { type: 'regex', pattern: 'Transaction Type\\s*:\\s*(.+)' },
       ],
       date: [{ type: 'regex', pattern: 'Transaction Date\\s*:\\s*(\\d{2}\\s+\\w+\\s+\\d{4})' }],
     },
