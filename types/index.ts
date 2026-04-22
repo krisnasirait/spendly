@@ -4,7 +4,7 @@ export interface Transaction {
   amount: number;
   currency: string;
   merchant: string;
-  merchant_normalized: string;
+  merchant_normalized: string | null;
   date: string;
   category: string;
   category_confidence: number;
