@@ -20,9 +20,12 @@ function getParserV2(): ParserV2 {
       subject_patterns: ['*credit card transaction*'],
     },
     extract: {
-      amount: [{ type: 'regex', pattern: 'Sejumlah\\s*:\\s*Rp\\.?([\\d,\\.]+)' }],
-      merchant: [{ type: 'regex', pattern: 'Merchant\\/ATM\\s*:\\s*(.+)' }],
-      date: [{ type: 'regex', pattern: 'Pada Tanggal\\s*:\\s*(\\d{2}-\\d{2}-\\d{4})\\s*(\\d{2}:\\d{2}:\\d{2})\\s*WIB' }],
+      amount: [{ type: 'regex', pattern: 'Sejumlah\\s*:\\s*Rp\\.?([\\d,\\.]+)', transform: 'parse_currency_idr' }],
+      merchant: [
+        { type: 'regex', pattern: 'Merchant\\/ATM\\s*:\\s*(.+)' },
+        { type: 'keyword_proximity', fallback: 'Merchant', proximity_window: 50, secondary_pattern: 'Merchant[^:]*:\\s*(.+)' },
+      ],
+      date: [{ type: 'regex', pattern: 'Pada Tanggal\\s*:\\s*(\\d{2}-\\d{2}-\\d{4})\\s*(\\d{2}:\\d{2}:\\d{2})\\s*WIB', transform: 'parse_datetime_id' }],
     },
   });
   registry.register({
@@ -34,8 +37,11 @@ function getParserV2(): ParserV2 {
       subject_patterns: ['*internet transaction*'],
     },
     extract: {
-      amount: [{ type: 'regex', pattern: '(?:Total Bill|Total Payment)\\s*:\\s*IDR\\s*([\\d,\\.]+)' }],
-      merchant: [{ type: 'regex', pattern: 'Payment to\\s*:\\s*(.+)' }],
+      amount: [{ type: 'regex', pattern: '(?:Total Bill|Total Payment)\\s*:\\s*IDR\\s*([\\d,\\.]+)', transform: 'parse_currency_idr' }],
+      merchant: [
+        { type: 'regex', pattern: 'Payment to\\s*:\\s*(.+)' },
+        { type: 'regex', pattern: 'Company\\/Product Name\\s*:\\s*(.+)' },
+      ],
       date: [{ type: 'regex', pattern: 'Transaction Date\\s*:\\s*(\\d{2}\\s+\\w+\\s+\\d{4})' }],
     },
   });
